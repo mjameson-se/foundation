@@ -1,0 +1,3 @@
+Export-Package: org.f8n.cornerstone.reflection
+-buildpath: com.google.guava
+Bundle-Version: 1.0.0

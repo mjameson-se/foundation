@@ -1,0 +1,10 @@
+#ifdef comment
+  /**
+   * #{formatComment(${comment}, 2)}
+   */
+#endif
+#! {before_getter}
+  @{getter}${scope} ${type} ${getter_name}()
+  {
+    return ${return};
+  }

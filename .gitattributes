@@ -1,0 +1,75 @@
+# Text files with LF eol
+*.auth crlf=auto
+*.awk crlf=auto
+*.bnd crlf=auto
+*.bndrun crlf=auto
+*.c crlf=auto ident
+*.conf crlf=auto
+*.cpp crlf=auto ident
+*.css crlf=auto
+*.ddf crlf=auto
+*.ee crlf=auto
+*.gradle crlf=auto
+*.groovy crlf=auto
+*.h crlf=auto ident
+*.html crlf=auto ident
+*.java crlf=auto ident
+*.js crlf=auto
+*.lib crlf=auto
+*.md crlf=auto
+*.MF crlf=auto
+*.mf crlf=auto
+*.perm crlf=auto
+*.php crlf=auto
+*.pl crlf=auto
+*.pom crlf=auto
+*.prefs crlf=auto
+*.properties crlf=auto
+*.py crlf=auto
+*.schema crlf=auto
+*.SF crlf=auto
+*.sh crlf=auto
+*.tcl crlf=auto
+*.txt crlf=auto
+*.xml crlf=auto
+*.xsd crlf=auto ident
+*.xsl crlf=auto
+*.xslt crlf=auto
+*.yml crlf=auto
+.classpath crlf=auto
+.project crlf=auto
+gradlew crlf=auto
+packageinfo crlf=auto
+Makefile crlf=auto
+README crlf=auto
+LICENSE crlf=auto
+
+# No EOL translation
+*.bat -crlf
+
+# Binary. No EOL translation, no diff
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.png binary
+*.crt binary
+*.pdf binary
+*.dll binary
+*.jar binary
+*.jnilib binary
+*.so binary
+*.zip binary
+*.doc binary
+*.ppt binary
+*.xls binary
+*.odg binary
+*.odp binary
+*.ods binary
+*.odt binary
+*.otg binary
+*.otp binary
+*.ots binary
+*.ott binary
+*.key binary
+*.numbers binary
+*.pages binary

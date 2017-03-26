@@ -1,0 +1,7 @@
+#! {file_comment}
+package ${package};
+
+#! {imports}
+
+#! {class}
+#! {file_end}

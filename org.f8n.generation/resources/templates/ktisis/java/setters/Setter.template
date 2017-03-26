@@ -1,0 +1,7 @@
+#! {before_setter}
+  @{setter}${scope} ${classname} set#{upcase(${name})}(${type} ${name})
+  {
+#! {before_set}
+    this.${name} = ${name};
+    return this;
+  }

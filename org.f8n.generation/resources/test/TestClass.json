@@ -1,0 +1,20 @@
+{
+	"name" : "TestClass",
+	"package" : "org.yesod.ktisis.test",
+	"class_comment" : "This is a test class",
+	"scope" : "public",
+	"fields" : [
+		{ "name" : "testField", "type" : "String", "default" : "\"test\"", "toString" : false },
+		{ "name" : "testOptional", "type" : "String", "optional" : true, "hashcode" : false },
+		{ "name" : "testBoolean", "type" : "Boolean", "equals" : false },
+		{ "name" : "testSet", "type" : "Set<Integer>", "collector" : true },
+		{ "name" : "testMap", "type" : "Map<String, Integer>", "collector" : true, "comment": "AbC this is a long comment I think... maybe... or not... aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaa a a a a a a a a a a a a aaaaaaaaaaaa swan duck pidgeon and seagull are all birds in the , phylum of birdiness and stuff. ${name} yayayayayayayyaayyay but if this is long then i can tes twrapping and stuff." }
+	],
+	"supertype" : {
+		"name" : "TestSuperClass",
+		"fields" : [
+		 { "name" : "superTest", "type" : "Boolean", "default" : true },
+		 { "name" : "superTwo", "type" : "String" }
+		]
+	}
+}
