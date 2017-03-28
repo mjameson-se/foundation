@@ -1,0 +1,7 @@
+Bundle-Version: 1.0.0
+-buildpath: \
+	org.f8n.cornerstone;version=latest,\
+	com.google.guava,\
+	javax.ws.rs-api,\
+	org.apache.felix.http.servlet-api,\
+	org.ops4j.pax.logging.pax-logging-api
