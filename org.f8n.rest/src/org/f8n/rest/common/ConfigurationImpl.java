@@ -1,4 +1,4 @@
-package org.f8n.rest.client;
+package org.f8n.rest.common;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +22,12 @@ public class ConfigurationImpl implements Configuration
   private Map<Class<?>, Map<Class<?>, Integer>> contracts;
   private Set<Object> instances;
   private Map<String, Object> properties;
+  private RuntimeType type;
+
+  public ConfigurationImpl(RuntimeType type)
+  {
+    this.type = type;
+  }
 
   public ConfigurationImpl(Map<Class<?>, Map<Class<?>, Integer>> clazzes,
                            Set<Object> instances,
@@ -76,7 +82,7 @@ public class ConfigurationImpl implements Configuration
   @Override
   public RuntimeType getRuntimeType()
   {
-    return RuntimeType.CLIENT;
+    return type;
   }
 
   @Override

@@ -13,16 +13,8 @@ import javax.ws.rs.core.Application;
 public class JaxRSContainerServlet extends HttpServlet
 {
   private static final long serialVersionUID = 1L;
-  private Set<Class<?>> classes;
-  private Set<Object> singletons;
-  private Map<String, Object> properties;
+  
 
-  public JaxRSContainerServlet(Application app)
-  {
-    this.classes = app.getClasses();
-    this.singletons = app.getSingletons();
-    this.properties = app.getProperties();
-  }
 
   @Override
   protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
