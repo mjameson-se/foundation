@@ -14,7 +14,6 @@ import javax.ws.rs.core.UriBuilder;
 
 public class JaxrsClient implements Client
 {
-
   @Override
   public Configuration getConfiguration()
   {
@@ -53,35 +52,35 @@ public class JaxrsClient implements Client
   public Client register(Class<?> arg0, Class<?>... arg1)
   {
     // TODO Auto-generated method stub
-    return null;
+    return this;
   }
 
   @Override
   public Client register(Class<?> arg0, Map<Class<?>, Integer> arg1)
   {
     // TODO Auto-generated method stub
-    return null;
+    return this;
   }
 
   @Override
   public Client register(Object arg0, int arg1)
   {
     // TODO Auto-generated method stub
-    return null;
+    return this;
   }
 
   @Override
   public Client register(Object arg0, Class<?>... arg1)
   {
     // TODO Auto-generated method stub
-    return null;
+    return this;
   }
 
   @Override
   public Client register(Object arg0, Map<Class<?>, Integer> arg1)
   {
     // TODO Auto-generated method stub
-    return null;
+    return this;
   }
 
   @Override
@@ -108,8 +107,7 @@ public class JaxrsClient implements Client
   @Override
   public Builder invocation(Link arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return target(arg0).request();
   }
 
   @Override
@@ -136,5 +134,4 @@ public class JaxrsClient implements Client
   {
     return target(link.getUri());
   }
-
 }

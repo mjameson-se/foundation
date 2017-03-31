@@ -1,6 +1,7 @@
 package org.f8n.rest.client;
 
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 import javax.ws.rs.HttpMethod;
@@ -15,10 +16,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import com.google.common.base.Joiner;
+import com.google.common.net.HttpHeaders;
+
 public class InvocationImpl implements Invocation
 {
   static class BuilderImpl implements Builder
   {
+    private MultivaluedMap<String, String> headers;
+    private Map<String, Object> properties;
+
     @Override
     public Response delete()
     {
@@ -172,36 +179,31 @@ public class InvocationImpl implements Invocation
     @Override
     public Builder accept(String... arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.ACCEPT, Joiner.on(',').join(arg0));
     }
 
     @Override
     public Builder accept(MediaType... arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.ACCEPT_ENCODING, Joiner.on(',').join(arg0));
     }
 
     @Override
     public Builder acceptEncoding(String... arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.ACCEPT_ENCODING, Joiner.on(',').join(arg0));
     }
 
     @Override
     public Builder acceptLanguage(Locale... arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.ACCEPT_LANGUAGE, Joiner.on(",").join(arg0));
     }
 
     @Override
     public Builder acceptLanguage(String... arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.ACCEPT_LANGUAGE, Joiner.on(",").join(arg0));
     }
 
     @Override
@@ -252,22 +254,19 @@ public class InvocationImpl implements Invocation
     @Override
     public Builder cacheControl(CacheControl arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.CACHE_CONTROL, arg0);
     }
 
     @Override
     public Builder cookie(Cookie arg0)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.COOKIE, arg0);
     }
 
     @Override
     public Builder cookie(String arg0, String arg1)
     {
-      // TODO Auto-generated method stub
-      return null;
+      return header(HttpHeaders.COOKIE, String.format("%s=%s", arg0, arg1));
     }
 
     @Override
@@ -302,15 +301,13 @@ public class InvocationImpl implements Invocation
   @Override
   public <T> T invoke(Class<T> arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return invoke().readEntity(arg0);
   }
 
   @Override
   public <T> T invoke(GenericType<T> arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return invoke().readEntity(arg0);
   }
 
   @Override
@@ -347,5 +344,4 @@ public class InvocationImpl implements Invocation
     // TODO Auto-generated method stub
     return null;
   }
-
 }

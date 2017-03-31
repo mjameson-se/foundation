@@ -99,7 +99,7 @@ public class WebTargetImpl implements WebTarget
   @Override
   public WebTarget matrixParam(String arg0, Object... arg1)
   {
-    // TODO Auto-generated method stub
+    getUriBuilder().matrixParam(arg0, arg1);
     return null;
   }
 
