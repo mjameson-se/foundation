@@ -9,175 +9,180 @@ import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 
+import org.f8n.rest.common.ConfigurationImpl;
+
 public class WebTargetImpl implements WebTarget
 {
+  private ConnectorProvider connector;
+  private ConfigurationImpl config;
+  private UriBuilder uriBuilder;
+
+  public WebTargetImpl(UriBuilder uriBuilder, ConnectorProvider connector, ConfigurationImpl config)
+  {
+    this.uriBuilder = uriBuilder;
+    this.connector = connector;
+    this.config = config;
+  }
 
   @Override
   public Configuration getConfiguration()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return config;
   }
 
   @Override
-  public WebTarget property(String arg0, Object arg1)
+  public WebTarget property(String key, Object value)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.property(key, value);
+    return this;
   }
 
   @Override
-  public WebTarget register(Class<?> arg0)
+  public WebTarget register(Class<?> componentClass)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentClass);
+    return this;
   }
 
   @Override
-  public WebTarget register(Object arg0)
+  public WebTarget register(Object componentInstance)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentInstance);
+    return this;
   }
 
   @Override
-  public WebTarget register(Class<?> arg0, int arg1)
+  public WebTarget register(Class<?> componentClass, int priority)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentClass, priority);
+    return this;
   }
 
   @Override
-  public WebTarget register(Class<?> arg0, Class<?>... arg1)
+  public WebTarget register(Class<?> componentClass, Class<?>... contracts)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentClass, contracts);
+    return this;
   }
 
   @Override
-  public WebTarget register(Class<?> arg0, Map<Class<?>, Integer> arg1)
+  public WebTarget register(Class<?> componentClass, Map<Class<?>, Integer> contracts)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentClass, contracts);
+    return this;
   }
 
   @Override
-  public WebTarget register(Object arg0, int arg1)
+  public WebTarget register(Object componentInstance, int priority)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentInstance, priority);
+    return this;
   }
 
   @Override
-  public WebTarget register(Object arg0, Class<?>... arg1)
+  public WebTarget register(Object componentInstance, Class<?>... contracts)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentInstance, contracts);
+    return this;
   }
 
   @Override
-  public WebTarget register(Object arg0, Map<Class<?>, Integer> arg1)
+  public WebTarget register(Object componentInstance, Map<Class<?>, Integer> contracts)
   {
-    // TODO Auto-generated method stub
-    return null;
+    config.register(componentInstance, contracts);
+    return this;
   }
 
   @Override
   public URI getUri()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return uriBuilder.build();
   }
 
   @Override
   public UriBuilder getUriBuilder()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return uriBuilder.clone();
   }
 
   @Override
   public WebTarget matrixParam(String arg0, Object... arg1)
   {
-    getUriBuilder().matrixParam(arg0, arg1);
-    return null;
+    uriBuilder.matrixParam(arg0, arg1);
+    return this;
   }
 
   @Override
   public WebTarget path(String arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.path(arg0);
+    return this;
   }
 
   @Override
   public WebTarget queryParam(String arg0, Object... arg1)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.queryParam(arg0, arg1);
+    return this;
   }
 
   @Override
   public Builder request()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return new InvocationBuilderImpl(config, connector, uriBuilder.build());
   }
 
   @Override
   public Builder request(String... arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return request().accept(arg0);
   }
 
   @Override
   public Builder request(MediaType... arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return request().accept(arg0);
   }
 
   @Override
   public WebTarget resolveTemplate(String arg0, Object arg1)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplate(arg0, arg1);
+    return this;
   }
 
   @Override
   public WebTarget resolveTemplate(String arg0, Object arg1, boolean arg2)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplate(arg0, arg1, arg2);
+    return this;
   }
 
   @Override
   public WebTarget resolveTemplateFromEncoded(String arg0, Object arg1)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplateFromEncoded(arg0, arg1);
+    return this;
   }
 
   @Override
   public WebTarget resolveTemplates(Map<String, Object> arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplates(arg0);
+    return this;
   }
 
   @Override
   public WebTarget resolveTemplates(Map<String, Object> arg0, boolean arg1)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplates(arg0, arg1);
+    return this;
   }
 
   @Override
   public WebTarget resolveTemplatesFromEncoded(Map<String, Object> arg0)
   {
-    // TODO Auto-generated method stub
-    return null;
+    uriBuilder.resolveTemplatesFromEncoded(arg0);
+    return this;
   }
-
 }

@@ -7,18 +7,42 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.RuntimeType;
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Feature;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 public class ConfigurationImpl implements Configuration
 {
+  private static final Set<Class<?>> CLIENT_CONTRACTS;
+  private static final Set<Class<?>> SERVER_CONTRACTS;
+  static
+  {
+    CLIENT_CONTRACTS = ImmutableSet.of(ClientRequestFilter.class,
+                                       ClientResponseFilter.class,
+                                       Feature.class,
+                                       MessageBodyReader.class,
+                                       MessageBodyWriter.class);
+
+    SERVER_CONTRACTS = ImmutableSet.of(ContainerRequestFilter.class,
+                                       ContainerResponseFilter.class,
+                                       Feature.class,
+                                       MessageBodyReader.class,
+                                       MessageBodyWriter.class);
+  }
   private Map<Class<?>, Map<Class<?>, Integer>> contracts;
   private Set<Object> instances;
   private Map<String, Object> properties;
@@ -50,9 +74,10 @@ public class ConfigurationImpl implements Configuration
   }
 
   @Override
-  public Map<Class<?>, Integer> getContracts(Class<?> arg0)
+  public Map<Class<?>, Integer> getContracts(Class<?> componentClass)
   {
-    return Collections.unmodifiableMap(contracts.get(arg0));
+    return contracts.containsKey(componentClass) ? Collections.unmodifiableMap(contracts.get(componentClass))
+                                                 : Collections.emptyMap();
   }
 
   @Override
@@ -86,13 +111,13 @@ public class ConfigurationImpl implements Configuration
   }
 
   @Override
-  public boolean isEnabled(Feature arg0)
+  public boolean isEnabled(Feature feature)
   {
     return false;
   }
 
   @Override
-  public boolean isEnabled(Class<? extends Feature> arg0)
+  public boolean isEnabled(Class<? extends Feature> feature)
   {
     return false;
   }
@@ -104,54 +129,65 @@ public class ConfigurationImpl implements Configuration
   }
 
   @Override
-  public boolean isRegistered(Class<?> clazz)
+  public boolean isRegistered(Class<?> componentClass)
   {
-    return contracts.containsKey(clazz);
+    return contracts.containsKey(componentClass);
   }
 
-  public void property(String arg0, Object arg1)
+  public void property(String key, Object value)
   {
-    properties.put(arg0, arg1);
+    properties.put(key, value);
   }
 
-  public void register(Class<?> arg0)
+  public void register(Class<?> componentClass)
   {
-    int prio = getPriority(arg0);
-    register(arg0, prio);
+    int prio = getPriority(componentClass);
+    register(componentClass, prio);
   }
 
-  public void register(Object arg0)
+  public void register(Object componentInstance)
   {
-    instances.add(arg0);
+    instances.add(componentInstance);
   }
 
-  private int getPriority(Class<?> clazz)
+  private int getPriority(Class<?> componentClass)
   {
-    Priority prio = clazz.getAnnotation(Priority.class);
+    Priority prio = componentClass.getAnnotation(Priority.class);
     return prio == null ? Priorities.USER : prio.value();
   }
 
-  private Set<Class<?>> discoverContracts(Class<?> clazz)
+  private Set<Class<?>> getPossibleContractsForType()
   {
-    // Check for if each of the desired types is assignable from clazz
-    return Collections.emptySet();
+    return type == RuntimeType.SERVER ? SERVER_CONTRACTS : CLIENT_CONTRACTS;
   }
 
-  public void register(Class<?> clazz, int prio)
+  private Set<Class<?>> discoverContracts(Class<?> componentClass)
   {
-    contracts.put(clazz, Maps.toMap(discoverContracts(clazz), k -> prio));
+    return getPossibleContractsForType().stream()
+                                        .filter(c -> c.isAssignableFrom(componentClass))
+                                        .collect(Collectors.toSet());
   }
 
-  public void register(Class<?> arg0, Class<?>... arg1)
+  public void register(Class<?> componentClass, int prio)
   {
-    ImmutableMap.Builder<Class<?>, Integer> builder = ImmutableMap.builder();
-    Arrays.stream(arg1).forEach(c -> builder.put(c, Integer.MAX_VALUE));
-    register(arg0, builder.build());
+    contracts.put(componentClass, Maps.toMap(discoverContracts(componentClass), k -> prio));
   }
 
-  public void register(Class<?> arg0, Map<Class<?>, Integer> arg1)
+  public void register(Class<?> componentClass, Class<?>... contractInterfaces)
   {
-    contracts.put(arg0, arg1);
+    int prio = getPriority(componentClass);
+    Map<Class<?>, Integer> contracts = Arrays.stream(contractInterfaces)
+                                             .collect(Collectors.toMap(Function.identity(), c -> prio));
+    register(componentClass, contracts);
+  }
+
+  public void register(Class<?> componentClass, Map<Class<?>, Integer> contracts)
+  {
+    Set<Class<?>> possibleContractsForType = getPossibleContractsForType();
+    this.contracts.put(componentClass,
+                       Maps.filterKeys(contracts,
+                                       k -> k.isAssignableFrom(componentClass)
+                                            && possibleContractsForType.contains(k)));
   }
 
   public void register(Object arg0, int arg1)
@@ -167,5 +203,10 @@ public class ConfigurationImpl implements Configuration
   public void register(Object arg0, Map<Class<?>, Integer> arg1)
   {
     // TODO Auto-generated method stub
+  }
+
+  public ConfigurationImpl copy()
+  {
+    return new ConfigurationImpl(new HashMap<>(contracts), new HashSet<>(instances), new HashMap<>(properties));
   }
 }

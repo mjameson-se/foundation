@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import javax.ws.rs.RuntimeType;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
@@ -12,102 +13,109 @@ import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.Link;
 import javax.ws.rs.core.UriBuilder;
 
+import org.f8n.rest.common.ConfigurationImpl;
+
 public class JaxrsClient implements Client
 {
+  private ConfigurationImpl config = new ConfigurationImpl(RuntimeType.CLIENT);
+  private ConnectorProvider connector;
+
+  public JaxrsClient(ConnectorProvider connector)
+  {
+    this.connector = connector;
+  }
+
   @Override
   public Configuration getConfiguration()
   {
-    return null;
+    return config;
   }
 
   @Override
-  public Client property(String arg0, Object arg1)
+  public Client property(String key, Object value)
   {
-    // TODO Auto-generated method stub
+    config.property(key, value);
     return this;
   }
 
   @Override
-  public Client register(Class<?> arg0)
+  public Client register(Class<?> componentClass)
   {
-    // TODO Auto-generated method stub
+    config.register(componentClass);
     return this;
   }
 
   @Override
-  public Client register(Object arg0)
+  public Client register(Object componentInstance)
   {
-    // TODO Auto-generated method stub
+    config.register(componentInstance);
     return this;
   }
 
   @Override
-  public Client register(Class<?> arg0, int arg1)
+  public Client register(Class<?> componentClass, int priority)
   {
-    // TODO Auto-generated method stub
+    config.register(componentClass, priority);
     return this;
   }
 
   @Override
-  public Client register(Class<?> arg0, Class<?>... arg1)
+  public Client register(Class<?> componentClass, Class<?>... contracts)
   {
-    // TODO Auto-generated method stub
+    config.register(componentClass, contracts);
     return this;
   }
 
   @Override
-  public Client register(Class<?> arg0, Map<Class<?>, Integer> arg1)
+  public Client register(Class<?> componentClass, Map<Class<?>, Integer> contracts)
   {
-    // TODO Auto-generated method stub
+    config.register(componentClass, contracts);
     return this;
   }
 
   @Override
-  public Client register(Object arg0, int arg1)
+  public Client register(Object componentInstance, int priority)
   {
-    // TODO Auto-generated method stub
+    config.register(componentInstance, priority);
     return this;
   }
 
   @Override
-  public Client register(Object arg0, Class<?>... arg1)
+  public Client register(Object componentInstance, Class<?>... contracts)
   {
-    // TODO Auto-generated method stub
+    config.register(componentInstance, contracts);
     return this;
   }
 
   @Override
-  public Client register(Object arg0, Map<Class<?>, Integer> arg1)
+  public Client register(Object componentInstance, Map<Class<?>, Integer> contracts)
   {
-    // TODO Auto-generated method stub
+    config.register(componentInstance, contracts);
     return this;
   }
 
   @Override
   public void close()
   {
-    // TODO Auto-generated method stub
-
+    connector.close();
   }
 
   @Override
   public HostnameVerifier getHostnameVerifier()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return connector.getHostnameVerifier();
   }
 
   @Override
   public SSLContext getSslContext()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return connector.getSslContext();
   }
 
   @Override
-  public Builder invocation(Link arg0)
+  public Builder invocation(Link link)
   {
-    return target(arg0).request();
+    return target(link).request();
   }
 
   @Override
@@ -117,16 +125,15 @@ public class JaxrsClient implements Client
   }
 
   @Override
-  public WebTarget target(URI arg0)
+  public WebTarget target(URI uri)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return target(UriBuilder.fromUri(uri));
   }
 
   @Override
   public WebTarget target(UriBuilder uriBuilder)
   {
-    return target(uriBuilder.build());
+    return new WebTargetImpl(uriBuilder, connector, config.copy());
   }
 
   @Override

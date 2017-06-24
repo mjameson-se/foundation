@@ -1,0 +1,7 @@
+-buildpath: \
+	com.google.guava,\
+	com.fasterxml.jackson.core.jackson-core,\
+	com.fasterxml.jackson.core.jackson-annotations,\
+	com.fasterxml.jackson.core.jackson-databind,\
+	org.f8n.rest;version=latest,\
+	javax.ws.rs-api

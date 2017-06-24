@@ -5,4 +5,5 @@ Bundle-Version: 1.0.0
 	javax.ws.rs-api,\
 	org.apache.felix.http.servlet-api,\
 	org.ops4j.pax.logging.pax-logging-api,\
-	javax.annotation-api
+	javax.annotation-api,\
+	org.apache.commons.io
