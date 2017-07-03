@@ -1,0 +1,4 @@
+-buildpath: \
+	org.f8n.cornerstone;version=latest,\
+	com.google.guava;version=22.0
+Export-Package: org.f8n.injector

@@ -1,3 +1,5 @@
-com.google.guava:guava:21.0
+com.google.guava:guava:22.0
 com.fasterxml.jackson.jr:jackson-jr-objects:2.5.3
 com.fasterxml.jackson.core:jackson-core:2.5.3
+org.slf4j:slf4j-api:1.7.25
+org.slf4j:slf4j-simple:1.7.25
