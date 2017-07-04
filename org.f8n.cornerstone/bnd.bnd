@@ -1,9 +1,9 @@
 Export-Package: org.f8n.cornerstone.reflection
 -buildpath: \
-	com.google.guava,\
-	org.apache.servicemix.bundles.junit;version=4.12,\
-	slf4j.api;version=1.7
+    com.google.guava,\
+    slf4j.api;version=1.7
 -testpath: \
-	slf4j.simple;version=1.7
+    org.apache.servicemix.bundles.junit;version=4.12,\
+    slf4j.simple;version=1.7
 
 Bundle-Version: 1.0.0

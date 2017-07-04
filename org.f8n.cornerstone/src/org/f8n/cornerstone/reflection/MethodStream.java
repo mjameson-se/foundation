@@ -16,7 +16,9 @@ import com.google.common.collect.ComparisonChain;
 
 public class MethodStream
 {
-  private static LoadingCache<Class<?>, Object> instanceCache = CacheBuilder.newBuilder().build(CacheLoader.from(MethodStream::newInstance));
+  private static LoadingCache<Class<?>, Object> instanceCache =
+                                                              CacheBuilder.newBuilder()
+                                                                          .build(CacheLoader.from(MethodStream::newInstance));
   private Stream<Method> methods;
 
   public MethodStream(Stream<Method> methods)
@@ -69,7 +71,8 @@ public class MethodStream
   public MethodStream sorted()
   {
     return new MethodStream(methods.sorted((m1, m2) -> ComparisonChain.start()
-                                                                      .compare(m1.getDeclaringClass().getName(), m2.getDeclaringClass().getName())
+                                                                      .compare(m1.getDeclaringClass().getName(),
+                                                                               m2.getDeclaringClass().getName())
                                                                       .compare(m1.getName(), m2.getName())
                                                                       .result()));
   }
@@ -84,10 +87,10 @@ public class MethodStream
       }
       catch (ExecutionException e)
       {
-    	throw new RuntimeException(e);
+        throw new RuntimeException(e);
       }
     };
-    return methods.map(i).map((b) -> new InterfaceWrapper<Y>(b.getInstance(), transform.apply(b), b.getMethod()));
+    return methods.map(i).map((b) -> new InterfaceWrapper<>(b.getInstance(), transform.apply(b), b.getMethod()));
   }
 
   public <X> Stream<BoundMethod<X>> asBoundMethod()
@@ -100,9 +103,14 @@ public class MethodStream
       }
       catch (ExecutionException e)
       {
-    	throw new RuntimeException(e);
+        throw new RuntimeException(e);
       }
     };
     return methods.map(i);
+  }
+
+  public Stream<Method> stream()
+  {
+    return methods;
   }
 }

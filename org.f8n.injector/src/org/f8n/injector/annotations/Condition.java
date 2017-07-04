@@ -1,5 +1,6 @@
 package org.f8n.injector.annotations;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -9,12 +10,12 @@ import java.lang.annotation.Target;
  * logic to defer creation until some condition outside of the framework scope is met.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(value = {})
+@Target(ElementType.TYPE)
 public @interface Condition
 {
   String method();
 
-  Class<?> target();
+  Class<?> target() default void.class;
 
   String[] arguments();
 }
