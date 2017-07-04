@@ -1,6 +1,7 @@
 package org.f8n.injector.example;
 
 import java.util.Optional;
+import java.util.function.BiPredicate;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -14,7 +15,7 @@ import org.f8n.injector.example.api.RestHandler;
 
 @Component
 @Path("/users")
-public class ApiUserHandler implements RestHandler
+public class ApiUserHandler implements RestHandler, BiPredicate<String, String>
 {
   private Database db;
 
@@ -52,5 +53,11 @@ public class ApiUserHandler implements RestHandler
   public boolean authorize(String userId, String password)
   {
     return Optional.ofNullable(db.read(userId)).map(u -> ((User) u).password.equals(password)).orElse(false);
+  }
+
+  @Override
+  public boolean test(String t, String u)
+  {
+    return authorize(t, u);
   }
 }

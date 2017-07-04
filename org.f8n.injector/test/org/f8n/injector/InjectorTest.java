@@ -1,11 +1,13 @@
 package org.f8n.injector;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.f8n.cornerstone.reflection.ClasspathSearch;
 import org.f8n.cornerstone.reflection.TypeInfo;
 import org.f8n.injector.example.ApiUserHandler;
 import org.f8n.injector.example.ApiUserHandler.User;
+import org.f8n.injector.example.ComponentServiceTest;
 import org.f8n.injector.example.ConfidentialInformationHandler;
 import org.f8n.injector.example.DatabaseImpl;
 import org.f8n.injector.example.DeferralTest;
@@ -48,6 +50,9 @@ public class InjectorTest
     String secret = secretsHandler.getSecrets(userId, userPassword);
     DatabaseImpl d = getOne(DatabaseImpl.class);
     Assert.assertEquals(d.secret(), secret);
+
+    Assert.assertFalse(isRegistered(ComponentServiceTest.class));
+    Assert.assertTrue(isRegistered(Supplier.class));
   }
 
   private <T> T getOne(Class<T> clazz)

@@ -203,7 +203,17 @@ public class Injector
 
   protected Stream<TypeInfo> getProvides(Class<?> clazz)
   {
-    return new TypeInfo(clazz).getAssignableTypes();
+    Stream<TypeInfo> assignableTypes = new TypeInfo(clazz).getAssignableTypes();
+    if (clazz.isAnnotationPresent(Component.class))
+    {
+      Component component = clazz.getAnnotation(Component.class);
+      Set<Class> services = ImmutableSet.copyOf(component.service());
+      if (!services.isEmpty())
+      {
+        assignableTypes = assignableTypes.filter(t -> services.contains(t.getRawClass()));
+      }
+    }
+    return assignableTypes;
   }
 
   public void reportUnresolved(PrintStream out)
