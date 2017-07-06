@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
@@ -26,15 +25,21 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.google.common.collect.Streams;
 
+/**
+ * Dependency graph helps to track the relationships between classes and facilitates resolving dependencies correctly.
+ *
+ * Note that currently this class CANNOT handle cycles in the dependency graph, with the exception of a multibind
+ * referencing itself.
+ */
 @SuppressWarnings("rawtypes")
-public class DependencyGraph
+class DependencyGraph
 {
   private static final Logger LOG = LoggerFactory.getLogger(DependencyGraph.class);
   private ListMultimap<TypeInfo, Class> providers = ArrayListMultimap.create();
   private ListMultimap<TypeInfo, Class> dependers = ArrayListMultimap.create();
   private Map<Class, ComponentInfo> resolution = new HashMap<>();
 
-  private class ComponentInfo implements Comparable<ComponentInfo>
+  private class ComponentInfo
   {
     Class clazz;
     Map<DependencyInfo, Boolean> dependencies;
@@ -54,6 +59,9 @@ public class DependencyGraph
       this.hasMultibind = deps.stream().anyMatch(d -> d.getCardinality() == Cardinality.MULTIPLE);
     }
 
+    /**
+     * @return true if the only unsatsified dependencies for this component are optional
+     */
     boolean onlyOptionalDependenciesRemaining()
     {
       return dependencies.entrySet()
@@ -61,18 +69,11 @@ public class DependencyGraph
                          .allMatch(e -> e.getValue() == true || e.getKey().getCardinality() == Cardinality.OPTIONAL);
     }
 
-    @Override
-    public int compareTo(ComponentInfo other)
-    {
-      return ComparisonChain.start()
-                            .compare(dependencies.values().stream().filter(b -> !b).count(),
-                                     other.dependencies.values().stream().filter(b -> !b).count())
-                            .compareFalseFirst(hasMultibind, other.hasMultibind)
-                            .compare(clazz.getSimpleName(), other.clazz.getSimpleName())
-                            .result();
-    }
-
-    public boolean optionalNotPossible()
+    /**
+     * @return true if all remaining unsatisfied optional dependencies are impossible to satisfy given the registered
+     *         classes
+     */
+    public boolean remainingOptionalAreNotPossible()
     {
       return dependencies.entrySet().stream().filter(e -> !e.getValue()).map(Entry::getKey).allMatch(dep ->
       {
@@ -81,6 +82,9 @@ public class DependencyGraph
       });
     }
 
+    /**
+     * @return true if all registered classes that could provide the multibind target(s) for this class are resolved
+     */
     public boolean allMultibindAvailable()
     {
       return dependencies.keySet().stream().filter(dep -> dep.getCardinality() == Cardinality.MULTIPLE).allMatch(dep ->
@@ -93,6 +97,13 @@ public class DependencyGraph
     }
   }
 
+  /**
+   * Add a new node to the graph
+   *
+   * @param clazz class being added
+   * @param provides all services provided by the class
+   * @param deps all services required by the class, may be empty
+   */
   public void addNode(Class clazz, Collection<TypeInfo> provides, Collection<DependencyInfo> deps)
   {
     LOG.info("Adding node {}", clazz.getSimpleName());
@@ -100,7 +111,13 @@ public class DependencyGraph
     resolution.put(clazz, new ComponentInfo(clazz, ImmutableList.copyOf(deps), ImmutableList.copyOf(provides)));
   }
 
-  public void onCreate(Class<?> clazz)
+  /**
+   * Called when a class from the graph is resolved, so that it may be used to satisfy dependencies using the services
+   * that it provides.
+   *
+   * @param clazz resolved class
+   */
+  public void onResolve(Class<?> clazz)
   {
     LOG.info("Creating {}", clazz.getSimpleName());
     ComponentInfo created = resolution.get(clazz);
@@ -111,6 +128,12 @@ public class DependencyGraph
     }
   }
 
+  /**
+   * Add a provider. This may be an external class not tracked by the graph.
+   *
+   * @param clazz class providing the service
+   * @param service service provided
+   */
   public void addProvider(Class clazz, TypeInfo service)
   {
     providers.put(service, clazz);
@@ -129,6 +152,9 @@ public class DependencyGraph
     });
   }
 
+  /**
+   * @return all classes tracked by the graph that are satisfied, pending, and have no multibind dependencies
+   */
   public List<Class> getSatisfiedPendingClassesWithNoMultiBind()
   {
     return resolution.values()
@@ -138,7 +164,10 @@ public class DependencyGraph
                      .collect(Collectors.toList());
   }
 
-  public Set<Class> getAllPotentialProviders(TypeInfo service)
+  /**
+   * @return all classes that can provide the given service
+   */
+  private Set<Class> getAllPotentialProviders(TypeInfo service)
   {
     return resolution.values()
                      .stream()
@@ -147,20 +176,19 @@ public class DependencyGraph
                      .collect(Collectors.toSet());
   }
 
-  public List<Class> getPendingClasses()
-  {
-    return resolution.values()
-                     .stream()
-                     .filter(dep -> dep.isPending)
-                     .map(dep -> dep.clazz)
-                     .collect(Collectors.toList());
-  }
-
+  /**
+   * @return stream of classes that can be resolved, but have been pending in case further classes might be added to the
+   *         graph to change their resolution
+   */
   public Stream<Class> remainingResolvable()
   {
     return Streams.concat(optionalWithNoProvider(), multibindWithAllPossibleAvailable());
   }
 
+  /**
+   * @return stream of classes with multibind dependencies which have not been resolved yet, due to the fact that there
+   *         are still unresolved classes in the graph which provide the target service
+   */
   public Stream<Class> remainingMultibind()
   {
     return resolution.values()
@@ -170,6 +198,10 @@ public class DependencyGraph
                      .map(c -> c.clazz);
   }
 
+  /**
+   * @return stream of classes with optional dependencies which are not satisfied, but there is at least one class in
+   *         the graph that could provide the target service that has not been resolved
+   */
   public Stream<Class> remainingOptional()
   {
     return resolution.values()
@@ -179,26 +211,39 @@ public class DependencyGraph
                      .map(c -> c.clazz);
   }
 
+  /**
+   * @return stream of pending classes with multibind dependencies where every possible provider in the graph has
+   *         already been resolved
+   */
   private Stream<Class> multibindWithAllPossibleAvailable()
   {
     return resolution.values()
                      .stream()
                      .filter(c -> c.hasMultibind && c.isPending)
                      .filter(c -> c.isSatisfied || c.onlyOptionalDependenciesRemaining())
-                     .filter(c -> c.allMultibindAvailable() && c.optionalNotPossible())
+                     .filter(c -> c.allMultibindAvailable() && c.remainingOptionalAreNotPossible())
                      .map(c -> c.clazz);
   }
 
+  /**
+   * @return stream of pending classes with unsatisfied optional dependencies where no potential providers are
+   *         registered
+   */
   private Stream<Class> optionalWithNoProvider()
   {
     return resolution.values()
                      .stream()
                      .filter(c -> !c.hasMultibind && c.isPending)
                      .filter(ComponentInfo::onlyOptionalDependenciesRemaining)
-                     .filter(ComponentInfo::optionalNotPossible)
+                     .filter(ComponentInfo::remainingOptionalAreNotPossible)
                      .map(c -> c.clazz);
   }
 
+  /**
+   * Print a diagnostic report of pending classes
+   *
+   * @param out print stream to write the report to
+   */
   public void printDiagnosticReport(PrintStream out)
   {
     out.println("Unresolved Service Report");

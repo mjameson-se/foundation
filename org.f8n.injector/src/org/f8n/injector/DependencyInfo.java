@@ -4,7 +4,10 @@ import org.f8n.cornerstone.reflection.TypeInfo;
 
 import com.google.common.base.MoreObjects;
 
-public class DependencyInfo
+/**
+ * Info about a Dependency, both the type of the service required and the cardinality.
+ */
+class DependencyInfo
 {
   private final TypeInfo type;
   private final Cardinality cardinality;

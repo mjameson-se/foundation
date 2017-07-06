@@ -8,7 +8,7 @@ import java.util.List;
  * Wrapper class for several {@link ArgumentProvider}s to support providing arguments from multiple sources, returning
  * the first non-null result provided by a delegate.
  */
-class CombiningArgumentProvider implements ArgumentProvider
+public class CombiningArgumentProvider implements ArgumentProvider
 {
   private List<ArgumentProvider> delegates;
 

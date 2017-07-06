@@ -13,9 +13,18 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 public @interface Condition
 {
+  /**
+   * @return name of the method on the target class
+   */
   String method();
 
+  /**
+   * @return target class, if unspecified then the annotated class is used
+   */
   Class<?> target() default void.class;
 
-  String[] arguments();
+  /**
+   * @return String arguments to the method
+   */
+  String[] arguments() default {};
 }

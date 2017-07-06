@@ -8,6 +8,9 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 
+/**
+ * Basic implementation of {@link ServiceRegistry} backed by a simple map.
+ */
 public class BasicServiceRegistry implements ServiceRegistry
 {
   private ListMultimap<TypeInfo, Object> registry = ArrayListMultimap.create();

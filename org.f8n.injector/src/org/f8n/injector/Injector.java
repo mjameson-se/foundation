@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import org.f8n.cornerstone.reflection.ArgumentProvider;
 import org.f8n.cornerstone.reflection.ClassStream;
+import org.f8n.cornerstone.reflection.CombiningArgumentProvider;
 import org.f8n.cornerstone.reflection.Invoker;
 import org.f8n.cornerstone.reflection.MethodStream;
 import org.f8n.cornerstone.reflection.TypeInfo;
@@ -30,12 +31,19 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 
+/**
+ * Dependency Injector. See repository readme for a detailed description of features.
+ *
+ * Basic usage involves many invocations of {@link #addClass(Class)}, typically followed by a single call to
+ * {@link #resolveRemaining()} to resolve any components whose instantiation was deferred due to optional or multibind
+ * dependencies that could have changed with further added classes.
+ */
 @SuppressWarnings("rawtypes")
 public class Injector
 {
   private static final Logger LOG = LoggerFactory.getLogger(Injector.class);
   private ServiceRegistry registry;
-  private Invoker invoker = new Invoker(new ArgProviderImpl());
+  private Invoker invoker;
   private DependencyGraph graph = new DependencyGraph();
   private Map<TypeInfo, Class> componentProviders = new ConcurrentHashMap<>();
 
@@ -45,31 +53,75 @@ public class Injector
     public Object get(int position, TypeInfo type, List<Annotation> annotations)
     {
       if (componentProviders.containsKey(type))
-        return invoker.buildNew(selectConstructor(type.getRawClass()));
+      {
+        Object obj = invoker.buildNew(selectConstructor(type.getRawClass()));
+        afterBuild(obj, type.getRawClass(), false);
+        return obj;
+      }
       if (type.getRawClass() == Set.class)
         return ImmutableSet.copyOf(registry.getService(type.getTypeArguments().get(0)));
       return registry.getService(type).stream().findFirst().orElse(null);
     }
   }
 
+  /**
+   * Create a new Injector
+   *
+   * @param registry registry for registering singletons and querying for dependencies
+   */
   public Injector(ServiceRegistry registry)
   {
     this.registry = registry;
+    this.invoker = new Invoker(new ArgProviderImpl());
   }
 
+  /**
+   * Create a new Injector
+   *
+   * @param registry registry for registering singletons and querying for dependencies
+   * @param externalProvider external argument provider for providing extra dependencies
+   */
+  public Injector(ServiceRegistry registry, ArgumentProvider externalProvider)
+  {
+    this.registry = registry;
+    ArgumentProvider provider = new CombiningArgumentProvider(new ArgProviderImpl(), externalProvider);
+    this.invoker = new Invoker(provider);
+  }
+
+  /**
+   * Register an external provider provided either by the {@link ServiceRegistry} or {@link ArgumentProvider} provided
+   * to the constructor.
+   *
+   * @param provider class providing the service
+   * @param service service provided
+   */
+  public void registerExternalProvider(Class<?> provider, Class<?> service)
+  {
+    graph.addProvider(provider, new TypeInfo(service));
+  }
+
+  /**
+   * Add a class to the injector to be created when satisfied, if possible.
+   *
+   * @param clazz class to add
+   */
   public void addClass(Class<?> clazz)
   {
     graph.addNode(clazz, getProvides(clazz).collect(Collectors.toSet()), getDeps(clazz));
     resolveSatisfied(false);
   }
 
+  /**
+   * @return true if either argument is true
+   */
   private Boolean reduceOr(Boolean one, Boolean two)
   {
-    if (one || two)
-      return Boolean.TRUE;
-    return Boolean.FALSE;
+    return one || two;
   }
 
+  /**
+   * Resolve any remaining services which may not be fully satisfied.
+   */
   public void resolveRemaining()
   {
     resolveSatisfied(true);
@@ -105,11 +157,17 @@ public class Injector
     }
   }
 
+  /**
+   * Called when a component class is satisfied to resolve it.
+   *
+   * @param clazz class that is satisfied
+   * @return true if the class was resolved, false if resolution was deferred
+   */
   protected boolean whenSatisfied(Class<?> clazz)
   {
     Component component = clazz.getAnnotation(Component.class);
 
-    if (clazz.isAnnotationPresent(Condition.class) && deferConstruction(clazz, component))
+    if (deferResolution(clazz))
     {
       LOG.info("Deferring {}", clazz.getSimpleName());
       return false;
@@ -123,13 +181,21 @@ public class Injector
     {
       getProvides(clazz).forEach(provided -> componentProviders.putIfAbsent(provided, clazz));
     }
-    graph.onCreate(clazz);
+    graph.onResolve(clazz);
     return true;
   }
 
+  /**
+   * Check if a class's resolution should be deferred.
+   *
+   * @param clazz class to evaluate
+   * @return true to defer
+   */
   @SuppressWarnings("unchecked")
-  protected boolean deferConstruction(Class clazz, Component component)
+  protected boolean deferResolution(Class clazz)
   {
+    if (!clazz.isAnnotationPresent(Condition.class))
+      return false;
     try
     {
       Condition condition = (Condition) clazz.getAnnotation(Condition.class);
@@ -150,6 +216,13 @@ public class Injector
     return true;
   }
 
+  /**
+   * Called after Injector builds any component to perform method injection and activation.
+   *
+   * @param object newly constructed object
+   * @param clazz class of object
+   * @param singleton true if the object is being built as a singleton
+   */
   protected void afterBuild(Object object, Class<?> clazz, boolean singleton)
   {
     new MethodStream(clazz).withAnnotation(Inject.class).publicOnly().stream().forEach(m -> invoker.invoke(object, m));
@@ -163,6 +236,12 @@ public class Injector
     }
   }
 
+  /**
+   * Determine the list of dependencies for the class
+   * 
+   * @param clazz class to evaluate
+   * @return list of dependencies for the class
+   */
   protected List<DependencyInfo> getDeps(Class<?> clazz)
   {
     return Streams.concat(Arrays.stream(selectConstructor(clazz).getGenericParameterTypes()),
@@ -171,11 +250,23 @@ public class Injector
                   .collect(Collectors.toList());
   }
 
+  /**
+   * Find the bind methods for this class
+   * 
+   * @param clazz class to evaluate
+   * @return stream stream of methods used for dependency injection
+   */
   protected Stream<Method> findBindMethods(Class<?> clazz)
   {
     return new ClassStream(clazz).mapMethods().withAnnotation(Inject.class).publicOnly().stream();
   }
 
+  /**
+   * Map a type to a dependency -- handles determining cardinality and target type
+   * 
+   * @param type type parameter to bind method or constructor
+   * @return corresponding {@link DependencyInfo}
+   */
   protected DependencyInfo mapToDependency(Type type)
   {
     TypeInfo typeInfo = new TypeInfo(type);
@@ -186,6 +277,12 @@ public class Injector
     return new DependencyInfo(typeInfo, Cardinality.SINGLE);
   }
 
+  /**
+   * Select an appropriate constructor for the class
+   * 
+   * @param clazz class to evaluate
+   * @return chosen constructor
+   */
   protected Constructor<?> selectConstructor(Class<?> clazz)
   {
     for (Constructor<?> ctor : clazz.getConstructors())
@@ -201,6 +298,12 @@ public class Injector
     return clazz.getConstructors()[0];
   }
 
+  /**
+   * Determine the list of services provided by the class.
+   * 
+   * @param clazz class to evaluate
+   * @return stream of services provided
+   */
   protected Stream<TypeInfo> getProvides(Class<?> clazz)
   {
     Stream<TypeInfo> assignableTypes = new TypeInfo(clazz).getAssignableTypes();
@@ -216,6 +319,11 @@ public class Injector
     return assignableTypes;
   }
 
+  /**
+   * Print a report of unresolved components
+   * 
+   * @param out stream to print to
+   */
   public void reportUnresolved(PrintStream out)
   {
     graph.printDiagnosticReport(out);
