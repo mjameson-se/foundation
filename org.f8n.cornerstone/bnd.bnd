@@ -6,4 +6,3 @@ Export-Package: org.f8n.cornerstone.reflection
     org.apache.servicemix.bundles.junit;version=4.12,\
     slf4j.simple;version=1.7
 
-Bundle-Version: 1.0.0
