@@ -232,13 +232,13 @@ public class Injector
                            .forEach(m -> invoker.invoke(object, m));
     if (singleton)
     {
-      getProvides(clazz).forEach(service -> registry.register(object, service));
+      registry.register(object, getProvides(clazz).collect(Collectors.toSet()));
     }
   }
 
   /**
    * Determine the list of dependencies for the class
-   * 
+   *
    * @param clazz class to evaluate
    * @return list of dependencies for the class
    */
@@ -252,7 +252,7 @@ public class Injector
 
   /**
    * Find the bind methods for this class
-   * 
+   *
    * @param clazz class to evaluate
    * @return stream stream of methods used for dependency injection
    */
@@ -263,7 +263,7 @@ public class Injector
 
   /**
    * Map a type to a dependency -- handles determining cardinality and target type
-   * 
+   *
    * @param type type parameter to bind method or constructor
    * @return corresponding {@link DependencyInfo}
    */
@@ -279,7 +279,7 @@ public class Injector
 
   /**
    * Select an appropriate constructor for the class
-   * 
+   *
    * @param clazz class to evaluate
    * @return chosen constructor
    */
@@ -300,7 +300,7 @@ public class Injector
 
   /**
    * Determine the list of services provided by the class.
-   * 
+   *
    * @param clazz class to evaluate
    * @return stream of services provided
    */
@@ -321,7 +321,7 @@ public class Injector
 
   /**
    * Print a report of unresolved components
-   * 
+   *
    * @param out stream to print to
    */
   public void reportUnresolved(PrintStream out)

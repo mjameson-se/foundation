@@ -39,13 +39,24 @@ public class Invoker
   @SuppressWarnings("unchecked")
   public <T> T buildNew(Constructor<?> ctor)
   {
-    return (T) invokeInternal(ctor::newInstance, ctor);
+    return (T) invokeInternal(ctor::newInstance, ctor, provider);
   }
 
   @SuppressWarnings("unchecked")
   public <T> T invoke(Object host, Method method)
   {
-    return (T) invokeInternal(args -> method.invoke(host, args), method);
+    return (T) invokeInternal(args -> method.invoke(host, args), method, provider);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> T invokeNoArgs(Object host, Method method)
+  {
+    return (T) invokeInternal(args -> method.invoke(host, args), method, (a, b, c) -> null);
+  }
+
+  public static <T> T invokeStaticNoArgs(Method method)
+  {
+    return invokeNoArgs(null, method);
   }
 
   private interface Invokable
@@ -53,7 +64,7 @@ public class Invoker
     Object invoke(Object[] args) throws Exception;
   }
 
-  private Object invokeInternal(Invokable method, Executable methodRef)
+  private static Object invokeInternal(Invokable method, Executable methodRef, ArgumentProvider provider)
   {
     List<Object> args = new ArrayList<>(methodRef.getParameterCount());
     Type[] parameterTypes = methodRef.getGenericParameterTypes();
