@@ -1,0 +1,12 @@
+-buildpath: \
+	com.google.guava,\
+	com.fasterxml.jackson.jr.jackson-jr-objects,\
+	com.fasterxml.jackson.core.jackson-core,\
+	org.apache.servicemix.bundles.junit,\
+	org.f8n.r8n;version=snapshot
+	
+Include-Resource: resources/templates
+Export-Package: \
+	org.f8n.g8n.java,\
+	org.f8n.g8n,\
+	org.f8n.g8n.base
