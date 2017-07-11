@@ -22,4 +22,6 @@ junit: org.apache.servicemix.bundles.junit; version=4.12
 Import-Package: \
    com.google.common.*; version="[19,23)",\
    *
-Bundle-Version: 1.1.0-SNAPSHOT
+
+-groupid: org.f8n
+Bundle-Version: 1.1.2

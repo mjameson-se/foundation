@@ -1,0 +1,11 @@
+-buildpath: \
+	org.f8n.reflect;version=latest,\
+	com.google.guava;version=22.0,\
+	slf4j.api;version=1.7
+-testpath: \
+    ${junit},\
+    slf4j.simple;version=1.7,\
+    javax.ws.rs-api;version=2.0
+Export-Package: \
+	org.f8n.inject,\
+	org.f8n.inject.annotate

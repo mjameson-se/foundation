@@ -1,0 +1,16 @@
+-buildpath: \
+	com.google.guava,\
+	com.fasterxml.jackson.jr.jackson-jr-objects,\
+	com.fasterxml.jackson.core.jackson-core,\
+	org.f8n.reflect;version=snapshot,\
+	slf4j.api;version=1.7
+	
+-testpath: \
+	${junit},\
+	slf4j.simple;version=1.7
+	
+Include-Resource: resources/templates
+Export-Package: \
+	org.f8n.generate.java,\
+	org.f8n.generate,\
+	org.f8n.generate.base

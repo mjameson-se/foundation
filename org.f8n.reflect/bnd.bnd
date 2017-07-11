@@ -1,0 +1,8 @@
+Export-Package: org.f8n.reflect
+-buildpath: \
+    com.google.guava,\
+    slf4j.api;version=1.7
+-testpath: \
+    ${junit},\
+    slf4j.simple;version=1.7
+
