@@ -59,7 +59,9 @@ public class Injector
         return obj;
       }
       if (type.getRawClass() == Set.class)
+      {
         return ImmutableSet.copyOf(registry.getService(type.getTypeArguments().get(0)));
+      }
       return registry.getService(type).stream().findFirst().orElse(null);
     }
   }
@@ -137,24 +139,46 @@ public class Injector
     {
       while (result)
       {
-        result = graph.getSatisfiedPendingClassesWithNoMultiBind()
-                      .stream()
-                      .map(this::whenSatisfied)
-                      .reduce(false, this::reduceOr);
+        result = processSatisfied(graph.getSatisfiedPendingClassesWithNoMultiBind().stream(), Integer.MAX_VALUE);
       }
       if (force)
       {
-        result = graph.remainingResolvable().map(this::whenSatisfied).reduce(false, this::reduceOr);
+        result = processSatisfied(graph.remainingResolvable(), Integer.MAX_VALUE);
+        // For the last two cases, resolve at most one at a time
         if (!result)
         {
-          result = graph.remainingMultibind().map(this::whenSatisfied).reduce(false, this::reduceOr);
+          result = processSatisfied(graph.remainingMultibind(), 1);
         }
         if (!result)
         {
-          result = graph.remainingOptional().map(this::whenSatisfied).reduce(false, this::reduceOr);
+          result = processSatisfied(graph.remainingOptional(), 1);
         }
       }
     }
+  }
+
+  /**
+   * @param classesToResolve stream of classes to resolve
+   * @param limit upper bound on number of classes to resolve, discounting deferred classes
+   * @return true if any classes were successfully resolved
+   */
+  private boolean processSatisfied(Stream<Class> classesToResolve, int limit)
+  {
+    return classesToResolve.sorted(this::sortByPriority)
+                           .map(this::whenSatisfied)
+                           .filter(b -> b) // Filter deferred
+                           .limit(limit) // Apply limit
+                           .reduce(false, this::reduceOr);
+  }
+
+  /**
+   * Comparator function to sort by {@link Component#priority())
+   */
+  private int sortByPriority(Class<?> one, Class<?> two)
+  {
+    int p1 = Optional.ofNullable(one.getAnnotation(Component.class)).map(Component::priority).orElse(1000);
+    int p2 = Optional.ofNullable(two.getAnnotation(Component.class)).map(Component::priority).orElse(1000);
+    return Integer.compare(p1, p2);
   }
 
   /**
@@ -195,7 +219,9 @@ public class Injector
   protected boolean deferResolution(Class clazz)
   {
     if (!clazz.isAnnotationPresent(Condition.class))
+    {
       return false;
+    }
     try
     {
       Condition condition = (Condition) clazz.getAnnotation(Condition.class);
@@ -207,7 +233,9 @@ public class Injector
 
       Object ret = method.invoke(null, (Object[]) condition.arguments());
       if (ret instanceof Boolean)
+      {
         return (Boolean) ret;
+      }
     }
     catch (Exception ex)
     {
@@ -271,9 +299,13 @@ public class Injector
   {
     TypeInfo typeInfo = new TypeInfo(type);
     if (typeInfo.getRawClass() == Optional.class)
+    {
       return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.OPTIONAL);
+    }
     if (typeInfo.getRawClass() == Set.class)
+    {
       return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.MULTIPLE);
+    }
     return new DependencyInfo(typeInfo, Cardinality.SINGLE);
   }
 
@@ -288,12 +320,16 @@ public class Injector
     for (Constructor<?> ctor : clazz.getConstructors())
     {
       if (ctor.isAnnotationPresent(Inject.class))
+      {
         return ctor;
+      }
     }
     for (Constructor<?> ctor : clazz.getConstructors())
     {
       if (ctor.getParameterCount() == 0)
+      {
         return ctor;
+      }
     }
     return clazz.getConstructors()[0];
   }

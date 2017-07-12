@@ -23,4 +23,9 @@ public @interface Component
    *         dependent instance; defaults to true (singleton behavior)
    */
   boolean singleton() default true;
+
+  /**
+   * @return priority of the component, determining the order of creation for services resolved at the same time
+   */
+  int priority() default 1000;
 }
