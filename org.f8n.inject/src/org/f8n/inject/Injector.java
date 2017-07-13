@@ -102,12 +102,25 @@ public class Injector
 
   /**
    * Add a class to the injector to be created when satisfied, if possible.
+   * When added in this way, {@link Component#priority()} may not be respected.
    *
    * @param clazz class to add
    */
   public void addClass(Class<?> clazz)
   {
     graph.addNode(clazz, getProvides(clazz).collect(Collectors.toSet()), getDeps(clazz));
+    resolveSatisfied(false);
+  }
+
+  /**
+   * Add several classes to the injector to be created when satisfied, if possible.
+   * When added in this way, {@link Component#priority()} is respected.
+   *
+   * @param clazz class to add
+   */
+  public void addClasses(Stream<Class<?>> classes)
+  {
+    classes.forEach(clazz -> graph.addNode(clazz, getProvides(clazz).collect(Collectors.toSet()), getDeps(clazz)));
     resolveSatisfied(false);
   }
 
