@@ -59,9 +59,7 @@ public class Injector
         return obj;
       }
       if (type.getRawClass() == Set.class)
-      {
         return ImmutableSet.copyOf(registry.getService(type.getTypeArguments().get(0)));
-      }
       return registry.getService(type).stream().findFirst().orElse(null);
     }
   }
@@ -219,9 +217,7 @@ public class Injector
   protected boolean deferResolution(Class clazz)
   {
     if (!clazz.isAnnotationPresent(Condition.class))
-    {
       return false;
-    }
     try
     {
       Condition condition = (Condition) clazz.getAnnotation(Condition.class);
@@ -233,9 +229,7 @@ public class Injector
 
       Object ret = method.invoke(null, (Object[]) condition.arguments());
       if (ret instanceof Boolean)
-      {
-        return (Boolean) ret;
-      }
+        return ((Boolean) ret).booleanValue() == condition.expectForDefer();
     }
     catch (Exception ex)
     {
@@ -299,13 +293,9 @@ public class Injector
   {
     TypeInfo typeInfo = new TypeInfo(type);
     if (typeInfo.getRawClass() == Optional.class)
-    {
       return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.OPTIONAL);
-    }
     if (typeInfo.getRawClass() == Set.class)
-    {
       return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.MULTIPLE);
-    }
     return new DependencyInfo(typeInfo, Cardinality.SINGLE);
   }
 
@@ -320,16 +310,12 @@ public class Injector
     for (Constructor<?> ctor : clazz.getConstructors())
     {
       if (ctor.isAnnotationPresent(Inject.class))
-      {
         return ctor;
-      }
     }
     for (Constructor<?> ctor : clazz.getConstructors())
     {
       if (ctor.getParameterCount() == 0)
-      {
         return ctor;
-      }
     }
     return clazz.getConstructors()[0];
   }

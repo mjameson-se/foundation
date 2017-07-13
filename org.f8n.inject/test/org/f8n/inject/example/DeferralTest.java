@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component
-@Condition(method = "defer", arguments = { "one", "two" })
+@Condition(method = "defer", arguments = { "one", "two" }, expectForDefer = true)
 public class DeferralTest
 {
   private static final Logger LOG = LoggerFactory.getLogger(DeferralTest.class);

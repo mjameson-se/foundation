@@ -27,4 +27,9 @@ public @interface Condition
    * @return String arguments to the method
    */
   String[] arguments() default {};
+
+  /**
+   * @return expected value which will cause resolution to be deferred
+   */
+  boolean expectForDefer() default false;
 }
