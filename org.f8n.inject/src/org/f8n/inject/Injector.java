@@ -6,6 +6,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import org.f8n.inject.annotate.Activate;
 import org.f8n.inject.annotate.Component;
 import org.f8n.inject.annotate.Condition;
 import org.f8n.inject.annotate.Inject;
+import org.f8n.inject.annotate.Target;
 import org.f8n.reflect.ArgumentProvider;
 import org.f8n.reflect.ClassStream;
 import org.f8n.reflect.CombiningArgumentProvider;
@@ -32,10 +34,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 
 /**
- * Dependency Injector. See repository readme for a detailed description of features.
+ * Dependency Injector. See repository readme for a detailed description of
+ * features.
  *
- * Basic usage involves many invocations of {@link #addClass(Class)}, typically followed by a single call to
- * {@link #resolveRemaining()} to resolve any components whose instantiation was deferred due to optional or multibind
+ * Basic usage involves many invocations of {@link #addClass(Class)}, typically
+ * followed by a single call to {@link #resolveRemaining()} to resolve any
+ * components whose instantiation was deferred due to optional or multibind
  * dependencies that could have changed with further added classes.
  */
 @SuppressWarnings("rawtypes")
@@ -60,14 +64,30 @@ public class Injector
       }
       if (type.getRawClass() == Set.class)
         return ImmutableSet.copyOf(registry.getService(type.getTypeArguments().get(0)));
-      return registry.getService(type).stream().findFirst().orElse(null);
+      List<String> targetTags = annotations.stream()
+                                           .filter(a -> a instanceof Target)
+                                           .map(a -> Arrays.asList(((Target) a).value()))
+                                           .findFirst()
+                                           .orElse(Collections.emptyList());
+      return registry.getService(type).stream().filter(provider -> hasTags(provider, targetTags)).findFirst().orElse(null);
     }
+  }
+
+  private boolean hasTags(Object provider, List<String> tags)
+  {
+    if (tags.isEmpty())
+      return true;
+    Target target = provider.getClass().getAnnotation(Target.class);
+    if (target == null)
+      return false;
+    return Arrays.asList(target.value()).containsAll(tags);
   }
 
   /**
    * Create a new Injector
    *
-   * @param registry registry for registering singletons and querying for dependencies
+   * @param registry registry for registering singletons and querying for
+   *          dependencies
    */
   public Injector(ServiceRegistry registry)
   {
@@ -78,8 +98,10 @@ public class Injector
   /**
    * Create a new Injector
    *
-   * @param registry registry for registering singletons and querying for dependencies
-   * @param externalProvider external argument provider for providing extra dependencies
+   * @param registry registry for registering singletons and querying for
+   *          dependencies
+   * @param externalProvider external argument provider for providing extra
+   *          dependencies
    */
   public Injector(ServiceRegistry registry, ArgumentProvider externalProvider)
   {
@@ -89,8 +111,9 @@ public class Injector
   }
 
   /**
-   * Register an external provider provided either by the {@link ServiceRegistry} or {@link ArgumentProvider} provided
-   * to the constructor.
+   * Register an external provider provided either by the
+   * {@link ServiceRegistry} or {@link ArgumentProvider} provided to the
+   * constructor.
    *
    * @param provider class providing the service
    * @param service service provided
@@ -101,8 +124,8 @@ public class Injector
   }
 
   /**
-   * Add a class to the injector to be created when satisfied, if possible.
-   * When added in this way, {@link Component#priority()} may not be respected.
+   * Add a class to the injector to be created when satisfied, if possible. When
+   * added in this way, {@link Component#priority()} may not be respected.
    *
    * @param clazz class to add
    */
@@ -113,8 +136,9 @@ public class Injector
   }
 
   /**
-   * Add several classes to the injector to be created when satisfied, if possible.
-   * When added in this way, {@link Component#priority()} is respected.
+   * Add several classes to the injector to be created when satisfied, if
+   * possible. When added in this way, {@link Component#priority()} is
+   * respected.
    *
    * @param clazz class to add
    */
@@ -141,7 +165,8 @@ public class Injector
   }
 
   /**
-   * @param force force services with optional or multibind dependencies that are unsatisfied to be resolved
+   * @param force force services with optional or multibind dependencies that
+   *          are unsatisfied to be resolved
    */
   private void resolveSatisfied(boolean force)
   {
@@ -170,7 +195,8 @@ public class Injector
 
   /**
    * @param classesToResolve stream of classes to resolve
-   * @param limit upper bound on number of classes to resolve, discounting deferred classes
+   * @param limit upper bound on number of classes to resolve, discounting
+   *          deferred classes
    * @return true if any classes were successfully resolved
    */
   private boolean processSatisfied(Stream<Class> classesToResolve, int limit)
@@ -252,7 +278,8 @@ public class Injector
   }
 
   /**
-   * Called after Injector builds any component to perform method injection and activation.
+   * Called after Injector builds any component to perform method injection and
+   * activation.
    *
    * @param object newly constructed object
    * @param clazz class of object
@@ -279,10 +306,16 @@ public class Injector
    */
   protected List<DependencyInfo> getDeps(Class<?> clazz)
   {
-    return Streams.concat(Arrays.stream(selectConstructor(clazz).getGenericParameterTypes()),
-                          findBindMethods(clazz).flatMap(m -> Arrays.stream(m.getGenericParameterTypes())))
-                  .map(this::mapToDependency)
+    Constructor<?> ctor = selectConstructor(clazz);
+    return Streams.concat(mapToDependencies(ctor.getGenericParameterTypes(), ctor.getParameterAnnotations()),
+                          findBindMethods(clazz).flatMap(m -> mapToDependencies(m.getGenericParameterTypes(),
+                                                                                m.getParameterAnnotations())))
                   .collect(Collectors.toList());
+  }
+
+  protected Stream<DependencyInfo> mapToDependencies(Type[] types, Annotation[][] annotations)
+  {
+    return Streams.zip(Arrays.stream(types), Arrays.stream(annotations), this::mapToDependency);
   }
 
   /**
@@ -297,19 +330,28 @@ public class Injector
   }
 
   /**
-   * Map a type to a dependency -- handles determining cardinality and target type
+   * Map a type to a dependency -- handles determining cardinality and target
+   * type
    *
    * @param type type parameter to bind method or constructor
    * @return corresponding {@link DependencyInfo}
    */
-  protected DependencyInfo mapToDependency(Type type)
+  protected DependencyInfo mapToDependency(Type type, Annotation[] annotations)
   {
     TypeInfo typeInfo = new TypeInfo(type);
+    List<String> tags = Collections.emptyList();
+    for (Annotation annotation : annotations)
+    {
+      if (annotation instanceof Target)
+      {
+        tags = Arrays.asList(((Target) annotation).value());
+      }
+    }
     if (typeInfo.getRawClass() == Optional.class)
-      return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.OPTIONAL);
+      return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.OPTIONAL, tags);
     if (typeInfo.getRawClass() == Set.class)
-      return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.MULTIPLE);
-    return new DependencyInfo(typeInfo, Cardinality.SINGLE);
+      return new DependencyInfo(typeInfo.getTypeArguments().get(0), Cardinality.MULTIPLE, tags);
+    return new DependencyInfo(typeInfo, Cardinality.SINGLE, tags);
   }
 
   /**

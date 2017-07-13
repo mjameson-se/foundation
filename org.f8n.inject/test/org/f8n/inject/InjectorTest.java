@@ -12,6 +12,7 @@ import org.f8n.inject.example.DeferralTest;
 import org.f8n.inject.example.HttpService;
 import org.f8n.inject.example.OptionalDependencyTest;
 import org.f8n.inject.example.OptionalNonexistentDependencyTest;
+import org.f8n.inject.example.TargetTest;
 import org.f8n.reflect.ClasspathSearch;
 import org.f8n.reflect.TypeInfo;
 import org.junit.Assert;
@@ -53,6 +54,8 @@ public class InjectorTest
 
     Assert.assertFalse(isRegistered(ComponentServiceTest.class));
     Assert.assertTrue(isRegistered(Supplier.class));
+
+    getOne(TargetTest.class).test();
   }
 
   private <T> T getOne(Class<T> clazz)

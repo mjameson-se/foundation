@@ -1,5 +1,7 @@
 package org.f8n.inject;
 
+import java.util.List;
+
 import org.f8n.reflect.TypeInfo;
 
 import com.google.common.base.MoreObjects;
@@ -11,16 +13,18 @@ class DependencyInfo
 {
   private final TypeInfo type;
   private final Cardinality cardinality;
+  private final List<String> tags;
 
   public enum Cardinality
   {
     OPTIONAL, SINGLE, MULTIPLE
   }
 
-  public DependencyInfo(TypeInfo type, Cardinality cardinality)
+  public DependencyInfo(TypeInfo type, Cardinality cardinality, List<String> tags)
   {
     this.type = type;
     this.cardinality = cardinality;
+    this.tags = tags;
   }
 
   public TypeInfo getType()
@@ -31,6 +35,11 @@ class DependencyInfo
   public Cardinality getCardinality()
   {
     return cardinality;
+  }
+
+  public List<String> getTags()
+  {
+    return tags;
   }
 
   @Override

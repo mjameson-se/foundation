@@ -8,10 +8,12 @@ import javax.ws.rs.HeaderParam;
 
 import org.f8n.inject.annotate.Component;
 import org.f8n.inject.annotate.Inject;
+import org.f8n.inject.annotate.Target;
 import org.f8n.inject.example.api.Database;
 import org.f8n.inject.example.api.RestHandler;
 
 @Component
+@Target("secret")
 public class ConfidentialInformationHandler implements RestHandler
 {
   private String secret;
