@@ -51,6 +51,7 @@ class DependencyGraph
     boolean isSatisfied;
     boolean isPending;
     boolean hasMultibind;
+    public Throwable failure;
 
     ComponentInfo(Class clazz, List<DependencyInfo> deps, List<TypeInfo> provides)
     {
@@ -188,6 +189,7 @@ class DependencyGraph
   {
     return resolution.values()
                      .stream()
+                     .filter(dep -> dep.failure == null)
                      .filter(dep -> dep.provides.contains(service))
                      .map(dep -> dep.clazz)
                      .collect(Collectors.toSet());
@@ -212,6 +214,7 @@ class DependencyGraph
   {
     return resolution.values()
                      .stream()
+                     .filter(c -> c.failure == null)
                      .filter(c -> c.hasMultibind && c.isPending)
                      .filter(c -> c.isSatisfied || c.onlyOptionalDependenciesRemaining())
                      .map(c -> c.clazz);
@@ -267,8 +270,12 @@ class DependencyGraph
   public void printDiagnosticReport(PrintStream out)
   {
     out.println("Unresolved Service Report");
-    resolution.values().stream().filter(c -> c.isPending).forEach(c ->
+    resolution.values().stream().filter(c -> c.isPending || c.failure != null).forEach(c ->
     {
+      if (c.failure != null)
+      {
+        out.printf("%s: Failed -- %s", c.clazz.getSimpleName(), c.failure.getMessage());
+      }
       if (c.isSatisfied)
       {
         if (c.hasMultibind)
@@ -277,7 +284,7 @@ class DependencyGraph
         }
         else
         {
-          out.printf("%s: Deferred", c.clazz.getSimpleName());
+          out.printf("%s: Pending", c.clazz.getSimpleName());
         }
       }
       else
@@ -299,5 +306,12 @@ class DependencyGraph
       }
       out.println();
     });
+  }
+
+  public void onFailure(Class<?> clazz, Throwable t)
+  {
+    ComponentInfo componentInfo = resolution.get(clazz);
+    componentInfo.failure = t;
+    componentInfo.isPending = false;
   }
 }

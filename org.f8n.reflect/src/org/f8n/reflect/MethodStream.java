@@ -4,6 +4,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -31,6 +33,17 @@ public class MethodStream
     this(Arrays.stream(clazz.getMethods()));
   }
 
+  public static MethodStream allMethods(Class<?> clazz)
+  {
+    Set<Class<?>> classes = new HashSet<>();
+    while (clazz != null)
+    {
+      classes.add(clazz);
+      clazz = clazz.getSuperclass();
+    }
+    return new ClassStream(classes.stream()).mapDeclaredMethods();
+  }
+
   private static Object newInstance(Class<?> c)
   {
     try
@@ -56,6 +69,11 @@ public class MethodStream
   public MethodStream publicOnly()
   {
     return withFilter(m -> Modifier.isPublic(m.getModifiers()));
+  }
+
+  public MethodStream nonPublic()
+  {
+    return withFilter(m -> !Modifier.isPublic(m.getModifiers()));
   }
 
   public MethodStream withReturnType(Class<?> clazz)

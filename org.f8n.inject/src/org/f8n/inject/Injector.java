@@ -233,17 +233,26 @@ public class Injector
       LOG.info("Deferring {}", clazz.getSimpleName());
       return false;
     }
-    if (component == null || component.singleton())
+    try
     {
-      Object newOne = invoker.buildNew(selectConstructor(clazz));
-      afterBuild(newOne, clazz, true);
+      if (component == null || component.singleton())
+      {
+        Object newOne = invoker.buildNew(selectConstructor(clazz));
+        afterBuild(newOne, clazz, true);
+      }
+      else
+      {
+        getProvides(clazz).forEach(provided -> componentProviders.putIfAbsent(provided, clazz));
+      }
+      graph.onResolve(clazz);
+      return true;
     }
-    else
+    catch (Throwable t)
     {
-      getProvides(clazz).forEach(provided -> componentProviders.putIfAbsent(provided, clazz));
+      LOG.warn("Component {} failed to resolve", clazz.getSimpleName(), t);
+      graph.onFailure(clazz, t);
+      return true;
     }
-    graph.onResolve(clazz);
-    return true;
   }
 
   /**
@@ -287,6 +296,14 @@ public class Injector
    */
   protected void afterBuild(Object object, Class<?> clazz, boolean singleton)
   {
+    MethodStream.allMethods(clazz).nonPublic().withAnnotation(Inject.class).stream().forEach(m ->
+    {
+      LOG.warn("Class {} has non-public Inject method {}", clazz.getSimpleName(), m.getName());
+    });
+    MethodStream.allMethods(clazz).nonPublic().withAnnotation(Activate.class).stream().forEach(m ->
+    {
+      LOG.warn("Class {} has non-public Activate method {}", clazz.getSimpleName(), m.getName());
+    });
     new MethodStream(clazz).withAnnotation(Inject.class).publicOnly().stream().forEach(m -> invoker.invoke(object, m));
     new MethodStream(clazz).withAnnotation(Activate.class)
                            .publicOnly()
