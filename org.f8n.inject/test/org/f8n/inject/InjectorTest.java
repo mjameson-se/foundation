@@ -64,7 +64,7 @@ public class InjectorTest
     injector.resolveRemaining();
     HttpService http = getOne(HttpService.class);
     Assert.assertFalse(http.getLogger().isPresent());
-    Assert.assertEquals(2, http.getHandlers().size());
+    Assert.assertEquals(3, http.getHandlers().size());
   }
 
   @Test
