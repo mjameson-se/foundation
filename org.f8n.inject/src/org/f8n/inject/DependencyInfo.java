@@ -45,6 +45,10 @@ class DependencyInfo
   @Override
   public String toString()
   {
-    return MoreObjects.toStringHelper(getClass()).add("type", type).add("cardinality", cardinality).toString();
+    return MoreObjects.toStringHelper(getClass())
+                      .add("type", type)
+                      .add("cardinality", cardinality)
+                      .add("tags", tags)
+                      .toString();
   }
 }

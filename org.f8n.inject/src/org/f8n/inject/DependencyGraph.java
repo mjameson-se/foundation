@@ -1,21 +1,17 @@
 package org.f8n.inject;
 
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.f8n.inject.DependencyInfo.Cardinality;
-import org.f8n.inject.annotate.Target;
 import org.f8n.reflect.TypeInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +25,10 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.collect.Streams;
 
 /**
- * Dependency graph helps to track the relationships between classes and
- * facilitates resolving dependencies correctly.
+ * Dependency graph helps to track the relationships between classes and facilitates resolving dependencies correctly.
  *
- * Note that currently this class CANNOT handle cycles in the dependency graph,
- * with the exception of a multibind referencing itself.
+ * Note that currently this class CANNOT handle cycles in the dependency graph, with the exception of a multibind
+ * referencing itself.
  */
 @SuppressWarnings("rawtypes")
 class DependencyGraph
@@ -65,8 +60,7 @@ class DependencyGraph
     }
 
     /**
-     * @return true if the only unsatsified dependencies for this component are
-     *         optional
+     * @return true if the only unsatsified dependencies for this component are optional
      */
     boolean onlyOptionalDependenciesRemaining()
     {
@@ -76,8 +70,8 @@ class DependencyGraph
     }
 
     /**
-     * @return true if all remaining unsatisfied optional dependencies are
-     *         impossible to satisfy given the registered classes
+     * @return true if all remaining unsatisfied optional dependencies are impossible to satisfy given the registered
+     *         classes
      */
     public boolean remainingOptionalAreNotPossible()
     {
@@ -89,8 +83,7 @@ class DependencyGraph
     }
 
     /**
-     * @return true if all registered classes that could provide the multibind
-     *         target(s) for this class are resolved
+     * @return true if all registered classes that could provide the multibind target(s) for this class are resolved
      */
     public boolean allMultibindAvailable()
     {
@@ -119,19 +112,19 @@ class DependencyGraph
   }
 
   /**
-   * Called when a class from the graph is resolved, so that it may be used to
-   * satisfy dependencies using the services that it provides.
+   * Called when a class from the graph is resolved, so that it may be used to satisfy dependencies using the services
+   * that it provides.
    *
    * @param clazz resolved class
    */
-  public void onResolve(Class<?> clazz)
+  public void onResolve(Class<?> clazz, List<String> tags)
   {
-    LOG.info("Creating {}", clazz.getSimpleName());
+    LOG.info("Resolved {}", clazz.getSimpleName());
     ComponentInfo created = resolution.get(clazz);
     created.isPending = false;
     for (TypeInfo service : created.provides)
     {
-      addProvider(clazz, service);
+      addProvider(clazz, service, tags);
     }
   }
 
@@ -141,37 +134,34 @@ class DependencyGraph
    * @param clazz class providing the service
    * @param service service provided
    */
-  public void addProvider(Class<?> clazz, TypeInfo service)
+  public void addProvider(Class<?> clazz, TypeInfo service, List<String> tags)
   {
     providers.put(service, clazz);
-    List<String> tags;
-    if (clazz.isAnnotationPresent(Target.class))
-    {
-      tags = Arrays.asList(clazz.getAnnotation(Target.class).value());
-    }
-    else
-    {
-      tags = Collections.emptyList();
-    }
     dependers.get(service).forEach(depender ->
     {
       ComponentInfo dependerInfo = resolution.get(depender);
-      Optional<DependencyInfo> dep = dependerInfo.dependencies.keySet()
-                                                              .stream()
-                                                              .filter(d -> d.getType().equals(service))
-                                                              .filter(d -> tags.containsAll(d.getTags()))
-                                                              .findAny();
-      dep.ifPresent(d -> dependerInfo.dependencies.put(d, Boolean.TRUE));
+      dependerInfo.dependencies.keySet()
+                               .stream()
+                               .filter(d -> d.getType().equals(service))
+                               .filter(d -> tags.containsAll(d.getTags()))
+                               .forEach(d ->
+                               {
+                                 dependerInfo.dependencies.put(d, Boolean.TRUE);
+                               });
       if (dependerInfo.dependencies.values().stream().allMatch(b -> b == Boolean.TRUE))
       {
         dependerInfo.isSatisfied = true;
       }
     });
+
+    if (service.getRawClass() == ComponentFactory.class && service.getTypeArguments().size() == 1)
+    {
+      addProvider(clazz, service.getTypeArguments().get(0), tags);
+    }
   }
 
   /**
-   * @return all classes tracked by the graph that are satisfied, pending, and
-   *         have no multibind dependencies
+   * @return all classes tracked by the graph that are satisfied, pending, and have no multibind dependencies
    */
   public List<Class> getSatisfiedPendingClassesWithNoMultiBind()
   {
@@ -196,9 +186,8 @@ class DependencyGraph
   }
 
   /**
-   * @return stream of classes that can be resolved, but have been pending in
-   *         case further classes might be added to the graph to change their
-   *         resolution
+   * @return stream of classes that can be resolved, but have been pending in case further classes might be added to the
+   *         graph to change their resolution
    */
   public Stream<Class> remainingResolvable()
   {
@@ -206,9 +195,8 @@ class DependencyGraph
   }
 
   /**
-   * @return stream of classes with multibind dependencies which have not been
-   *         resolved yet, due to the fact that there are still unresolved
-   *         classes in the graph which provide the target service
+   * @return stream of classes with multibind dependencies which have not been resolved yet, due to the fact that there
+   *         are still unresolved classes in the graph which provide the target service
    */
   public Stream<Class> remainingMultibind()
   {
@@ -221,9 +209,8 @@ class DependencyGraph
   }
 
   /**
-   * @return stream of classes with optional dependencies which are not
-   *         satisfied, but there is at least one class in the graph that could
-   *         provide the target service that has not been resolved
+   * @return stream of classes with optional dependencies which are not satisfied, but there is at least one class in
+   *         the graph that could provide the target service that has not been resolved
    */
   public Stream<Class> remainingOptional()
   {
@@ -235,8 +222,8 @@ class DependencyGraph
   }
 
   /**
-   * @return stream of pending classes with multibind dependencies where every
-   *         possible provider in the graph has already been resolved
+   * @return stream of pending classes with multibind dependencies where every possible provider in the graph has
+   *         already been resolved
    */
   private Stream<Class> multibindWithAllPossibleAvailable()
   {
@@ -249,8 +236,8 @@ class DependencyGraph
   }
 
   /**
-   * @return stream of pending classes with unsatisfied optional dependencies
-   *         where no potential providers are registered
+   * @return stream of pending classes with unsatisfied optional dependencies where no potential providers are
+   *         registered
    */
   private Stream<Class> optionalWithNoProvider()
   {
@@ -274,9 +261,10 @@ class DependencyGraph
     {
       if (c.failure != null)
       {
-        out.printf("%s: Failed -- %s", c.clazz.getSimpleName(), c.failure.getMessage());
+        out.printf("%s: Failed -- %s%n", c.clazz.getSimpleName(), c.failure.getMessage());
+        c.failure.printStackTrace(out);
       }
-      if (c.isSatisfied)
+      else if (c.isSatisfied)
       {
         if (c.hasMultibind)
         {

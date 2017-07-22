@@ -8,10 +8,9 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,12 +33,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 
 /**
- * Dependency Injector. See repository readme for a detailed description of
- * features.
+ * Dependency Injector. See repository readme for a detailed description of features.
  *
- * Basic usage involves many invocations of {@link #addClass(Class)}, typically
- * followed by a single call to {@link #resolveRemaining()} to resolve any
- * components whose instantiation was deferred due to optional or multibind
+ * Basic usage involves many invocations of {@link #addClass(Class)}, typically followed by a single call to
+ * {@link #resolveRemaining()} to resolve any components whose instantiation was deferred due to optional or multibind
  * dependencies that could have changed with further added classes.
  */
 @SuppressWarnings("rawtypes")
@@ -49,45 +46,84 @@ public class Injector
   private ServiceRegistry registry;
   private Invoker invoker;
   private DependencyGraph graph = new DependencyGraph();
-  private Map<TypeInfo, Class> componentProviders = new ConcurrentHashMap<>();
 
   private class ArgProviderImpl implements ArgumentProvider
   {
     @Override
     public Object get(int position, TypeInfo type, List<Annotation> annotations)
     {
-      if (componentProviders.containsKey(type))
-      {
-        Object obj = invoker.buildNew(selectConstructor(type.getRawClass()));
-        afterBuild(obj, type.getRawClass(), false);
-        return obj;
-      }
-      if (type.getRawClass() == Set.class)
-        return ImmutableSet.copyOf(registry.getService(type.getTypeArguments().get(0)));
       List<String> targetTags = annotations.stream()
                                            .filter(a -> a instanceof Target)
                                            .map(a -> Arrays.asList(((Target) a).value()))
                                            .findFirst()
                                            .orElse(Collections.emptyList());
-      return registry.getService(type).stream().filter(provider -> hasTags(provider, targetTags)).findFirst().orElse(null);
+
+      TypeInfo serviceType = type;
+      if (type.getRawClass() == Set.class)
+      {
+        serviceType = type.getTypeArguments().get(0);
+      }
+
+      Stream<Object> services = Stream.concat(registry.getService(serviceType)
+                                                      .stream()
+                                                      .filter(provider -> hasTags(provider, targetTags)),
+                                              registry.getService(new TypeInfo(ComponentFactory.class, serviceType))
+                                                      .stream()
+                                                      .filter(factory -> hasTags(factory, targetTags))
+                                                      .map(cf -> ((ComponentFactory<?>) cf).buildComponent(annotations)));
+      if (type.getRawClass() == Set.class)
+        return services.collect(Collectors.toSet());
+      return services.findFirst().orElse(null);
     }
   }
 
-  private boolean hasTags(Object provider, List<String> tags)
+  private class InjectorComponentFactory implements ComponentFactory<Object>
+  {
+    private Class<?> componentClass;
+    private Supplier<Object> factory;
+    private List<String> tags;
+
+    private InjectorComponentFactory(Class<?> componentClass, Supplier<Object> factory, List<String> tags)
+    {
+      this.componentClass = componentClass;
+      this.factory = factory;
+      this.tags = tags;
+    }
+
+    @Override
+    public Object buildComponent(List<Annotation> annotations)
+    {
+      Object obj = factory.get();
+      afterBuild(obj, componentClass, false);
+      return obj;
+    }
+  }
+
+  static List<String> getTags(Object obj)
+  {
+    if (obj instanceof InjectorComponentFactory)
+      return ((InjectorComponentFactory) obj).tags;
+    if (obj instanceof Class)
+    {
+      if (((Class<?>) obj).isAnnotationPresent(Target.class))
+        return Arrays.asList(((Class<?>) obj).getAnnotation(Target.class).value());
+      else
+        return Collections.emptyList();
+    }
+    return getTags(obj.getClass());
+  }
+
+  static boolean hasTags(Object provider, List<String> tags)
   {
     if (tags.isEmpty())
       return true;
-    Target target = provider.getClass().getAnnotation(Target.class);
-    if (target == null)
-      return false;
-    return Arrays.asList(target.value()).containsAll(tags);
+    return getTags(provider).containsAll(tags);
   }
 
   /**
    * Create a new Injector
    *
-   * @param registry registry for registering singletons and querying for
-   *          dependencies
+   * @param registry registry for registering singletons and querying for dependencies
    */
   public Injector(ServiceRegistry registry)
   {
@@ -98,10 +134,8 @@ public class Injector
   /**
    * Create a new Injector
    *
-   * @param registry registry for registering singletons and querying for
-   *          dependencies
-   * @param externalProvider external argument provider for providing extra
-   *          dependencies
+   * @param registry registry for registering singletons and querying for dependencies
+   * @param externalProvider external argument provider for providing extra dependencies
    */
   public Injector(ServiceRegistry registry, ArgumentProvider externalProvider)
   {
@@ -111,21 +145,20 @@ public class Injector
   }
 
   /**
-   * Register an external provider provided either by the
-   * {@link ServiceRegistry} or {@link ArgumentProvider} provided to the
-   * constructor.
+   * Register an external provider provided either by the {@link ServiceRegistry} or {@link ArgumentProvider} provided
+   * to the constructor.
    *
    * @param provider class providing the service
    * @param service service provided
    */
   public void registerExternalProvider(Class<?> provider, Class<?> service)
   {
-    graph.addProvider(provider, new TypeInfo(service));
+    graph.addProvider(provider, new TypeInfo(service), Collections.emptyList());
   }
 
   /**
-   * Add a class to the injector to be created when satisfied, if possible. When
-   * added in this way, {@link Component#priority()} may not be respected.
+   * Add a class to the injector to be created when satisfied, if possible. When added in this way,
+   * {@link Component#priority()} may not be respected.
    *
    * @param clazz class to add
    */
@@ -136,9 +169,8 @@ public class Injector
   }
 
   /**
-   * Add several classes to the injector to be created when satisfied, if
-   * possible. When added in this way, {@link Component#priority()} is
-   * respected.
+   * Add several classes to the injector to be created when satisfied, if possible. When added in this way,
+   * {@link Component#priority()} is respected.
    *
    * @param clazz class to add
    */
@@ -165,8 +197,7 @@ public class Injector
   }
 
   /**
-   * @param force force services with optional or multibind dependencies that
-   *          are unsatisfied to be resolved
+   * @param force force services with optional or multibind dependencies that are unsatisfied to be resolved
    */
   private void resolveSatisfied(boolean force)
   {
@@ -195,8 +226,7 @@ public class Injector
 
   /**
    * @param classesToResolve stream of classes to resolve
-   * @param limit upper bound on number of classes to resolve, discounting
-   *          deferred classes
+   * @param limit upper bound on number of classes to resolve, discounting deferred classes
    * @return true if any classes were successfully resolved
    */
   private boolean processSatisfied(Stream<Class> classesToResolve, int limit)
@@ -233,6 +263,7 @@ public class Injector
       LOG.info("Deferring {}", clazz.getSimpleName());
       return false;
     }
+    List<String> tags = getTags(clazz);
     try
     {
       if (component == null || component.singleton())
@@ -242,9 +273,16 @@ public class Injector
       }
       else
       {
-        getProvides(clazz).forEach(provided -> componentProviders.putIfAbsent(provided, clazz));
+        InjectorComponentFactory cf = new InjectorComponentFactory(clazz,
+                                                                   () -> invoker.buildNew(selectConstructor(clazz)),
+                                                                   tags);
+        Set<TypeInfo> cfServices = getProvides(clazz).map(service -> new TypeInfo(ComponentFactory.class, service))
+                                                     .collect(Collectors.toSet());
+        LOG.info("Resolving factory for {}", clazz.getSimpleName());
+        cfServices.forEach(cfService -> graph.addProvider(InjectorComponentFactory.class, cfService, tags));
+        registry.register(cf, cfServices);
       }
-      graph.onResolve(clazz);
+      graph.onResolve(clazz, tags);
       return true;
     }
     catch (Throwable t)
@@ -287,8 +325,7 @@ public class Injector
   }
 
   /**
-   * Called after Injector builds any component to perform method injection and
-   * activation.
+   * Called after Injector builds any component to perform method injection and activation.
    *
    * @param object newly constructed object
    * @param clazz class of object
@@ -347,8 +384,7 @@ public class Injector
   }
 
   /**
-   * Map a type to a dependency -- handles determining cardinality and target
-   * type
+   * Map a type to a dependency -- handles determining cardinality and target type
    *
    * @param type type parameter to bind method or constructor
    * @return corresponding {@link DependencyInfo}
