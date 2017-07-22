@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
@@ -34,9 +33,28 @@ import com.google.common.collect.Streams;
 class DependencyGraph
 {
   private static final Logger LOG = LoggerFactory.getLogger(DependencyGraph.class);
-  private ListMultimap<TypeInfo, Class> providers = ArrayListMultimap.create();
+  private ListMultimap<TypeInfo, ProviderInfo> providers = ArrayListMultimap.create();
   private ListMultimap<TypeInfo, Class> dependers = ArrayListMultimap.create();
   private Map<Class, ComponentInfo> resolution = new HashMap<>();
+
+  private class ProviderInfo
+  {
+    private Class clazz;
+    private List<String> tags;
+    private TypeInfo service;
+
+    private ProviderInfo(Class clazz, TypeInfo service, List<String> tags)
+    {
+      this.clazz = clazz;
+      this.service = service;
+      this.tags = tags;
+    }
+
+    boolean satisfies(DependencyInfo dep)
+    {
+      return service.equals(dep.getType()) && tags.containsAll(dep.getTags());
+    }
+  }
 
   private class ComponentInfo
   {
@@ -52,7 +70,9 @@ class DependencyGraph
     {
       this.clazz = clazz;
       this.dependencies = deps.stream().collect(Collectors.toMap(Function.identity(),
-                                                                 dep -> providers.containsKey(dep.getType())));
+                                                                 dep -> providers.get(dep.getType())
+                                                                                 .stream()
+                                                                                 .anyMatch(p -> p.satisfies(dep))));
       this.provides = provides;
       this.isSatisfied = deps.isEmpty() || dependencies.values().stream().allMatch(Boolean::booleanValue);
       this.isPending = true;
@@ -89,7 +109,7 @@ class DependencyGraph
     {
       return dependencies.keySet().stream().filter(dep -> dep.getCardinality() == Cardinality.MULTIPLE).allMatch(dep ->
       {
-        ImmutableSet<Class> currentProviders = ImmutableSet.copyOf(providers.get(dep.getType()));
+        Set<Class> currentProviders = providers.get(dep.getType()).stream().map(p -> p.clazz).collect(Collectors.toSet());
         Set<Class> potentialProviders = getAllPotentialProviders(dep.getType());
         SetView<Class> difference = Sets.difference(potentialProviders, currentProviders);
         return difference.isEmpty() || (difference.size() == 1 && difference.contains(this.clazz));
@@ -136,14 +156,14 @@ class DependencyGraph
    */
   public void addProvider(Class<?> clazz, TypeInfo service, List<String> tags)
   {
-    providers.put(service, clazz);
+    ProviderInfo providerInfo = new ProviderInfo(clazz, service, tags);
+    providers.put(service, providerInfo);
     dependers.get(service).forEach(depender ->
     {
       ComponentInfo dependerInfo = resolution.get(depender);
       dependerInfo.dependencies.keySet()
                                .stream()
-                               .filter(d -> d.getType().equals(service))
-                               .filter(d -> tags.containsAll(d.getTags()))
+                               .filter(providerInfo::satisfies)
                                .forEach(d ->
                                {
                                  dependerInfo.dependencies.put(d, Boolean.TRUE);

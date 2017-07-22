@@ -2,6 +2,7 @@ package org.f8n.inject;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -59,7 +60,7 @@ public class Injector
                                            .orElse(Collections.emptyList());
 
       TypeInfo serviceType = type;
-      if (type.getRawClass() == Set.class)
+      if (type.getRawClass() == Set.class && !type.getTypeArguments().isEmpty())
       {
         serviceType = type.getTypeArguments().get(0);
       }
@@ -103,10 +104,10 @@ public class Injector
   {
     if (obj instanceof InjectorComponentFactory)
       return ((InjectorComponentFactory) obj).tags;
-    if (obj instanceof Class)
+    if (obj instanceof AnnotatedElement)
     {
-      if (((Class<?>) obj).isAnnotationPresent(Target.class))
-        return Arrays.asList(((Class<?>) obj).getAnnotation(Target.class).value());
+      if (((AnnotatedElement) obj).isAnnotationPresent(Target.class))
+        return Arrays.asList(((AnnotatedElement) obj).getAnnotation(Target.class).value());
       else
         return Collections.emptyList();
     }
@@ -117,7 +118,9 @@ public class Injector
   {
     if (tags.isEmpty())
       return true;
-    return getTags(provider).containsAll(tags);
+    List<String> providedTags = getTags(provider);
+    LOG.info("{}: {} vs {}", provider.getClass().getSimpleName(), providedTags, tags);
+    return providedTags.containsAll(tags);
   }
 
   /**
@@ -341,11 +344,8 @@ public class Injector
     {
       LOG.warn("Class {} has non-public Activate method {}", clazz.getSimpleName(), m.getName());
     });
-    new MethodStream(clazz).withAnnotation(Inject.class).publicOnly().stream().forEach(m -> invoker.invoke(object, m));
-    new MethodStream(clazz).withAnnotation(Activate.class)
-                           .publicOnly()
-                           .stream()
-                           .forEach(m -> invoker.invoke(object, m));
+    new MethodStream(clazz).withAnnotation(Inject.class).stream().forEach(m -> invoker.invoke(object, m));
+    new MethodStream(clazz).withAnnotation(Activate.class).stream().forEach(m -> invoker.invoke(object, m));
     if (singleton)
     {
       registry.register(object, getProvides(clazz).collect(Collectors.toSet()));
