@@ -3,6 +3,7 @@ package org.f8n.generate.java;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -12,12 +13,12 @@ import java.util.stream.Collectors;
 
 import org.f8n.generate.TemplateProcessor;
 import org.f8n.generate.VariableResolver;
-import org.f8n.generate.base.FeatureTags;
-import org.f8n.generate.base.WhitespaceHelper;
-import org.f8n.generate.base.WhitespaceHelperConfig;
 import org.f8n.generate.base.ExtensionMethod.ExtensionPoint;
+import org.f8n.generate.base.FeatureTags;
 import org.f8n.generate.base.FeatureTags.Feature;
 import org.f8n.generate.base.FunctionsPlugin.FunctionRegistration;
+import org.f8n.generate.base.WhitespaceHelper;
+import org.f8n.generate.base.WhitespaceHelperConfig;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -99,9 +100,7 @@ public class ClassBase
     Map<?, ?> superdef = variableResolver.getAs("supertype", Map.class).orElse(null);
     String impls = variableResolver.getAs("implements", String.class).map(impl -> " implements " + impl).orElse("");
     if (superdef == null)
-    {
       return impls;
-    }
     return String.format(" extends %s%s", superdef.get("name"), impls);
   }
 
@@ -110,9 +109,7 @@ public class ClassBase
   {
     List<Map<?, ?>> superFields = getSuperFields(ctx);
     if (superFields.isEmpty())
-    {
       return null;
-    }
     String args = superFields.stream().map((f) -> (String) f.get("name")).collect(Collectors.joining(", "));
     return String.format("    super(%s);", args);
   }
@@ -215,11 +212,7 @@ public class ClassBase
   {
     Preconditions.checkArgument(args.length >= 2);
     // The args list has been split on ", "; if the comment contained that string then we need to restore it
-    String comment = args[0];
-    for (int i = 1; i < args.length - 1; i++)
-    {
-      comment += ", " + args[i];
-    }
+    String comment = Joiner.on(", ").join(Arrays.asList(args).subList(0, args.length - 1));
     comment = TemplateProcessor.processTemplate(comment, ctx);
     int indent = Integer.parseInt(args[args.length - 1]);
     String[] words = comment.split(" ");

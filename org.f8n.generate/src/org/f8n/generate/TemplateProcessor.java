@@ -73,14 +73,10 @@ public abstract class TemplateProcessor
     ClassLoader cl = ctx.getClassLoader();
     InputStream is = cl.getResourceAsStream(path);
     if (is != null)
-    {
       return is;
-    }
-    Path resourcesDir = Paths.get("resources/main");
+    Path resourcesDir = Paths.get("resources");
     if (resourcesDir.toFile().exists())
-    {
       return Files.newInputStream(resourcesDir.resolve(path), StandardOpenOption.READ);
-    }
     return null;
   }
 }

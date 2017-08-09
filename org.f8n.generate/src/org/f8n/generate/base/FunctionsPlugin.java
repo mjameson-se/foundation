@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 
 public class FunctionsPlugin implements TemplatePlugin
 {
-  private static Pattern matcher = Pattern.compile("#\\{(\\w+)\\(([\\w\\., ]*)\\)\\}");
+  private static Pattern matcher = Pattern.compile("#\\{(\\w+)\\(([^\\)]*)\\)\\}");
   // #{toUpper(${name})}
   // #{substr(${name}, 2)}
   private Map<String, FunctionProvider> functions = new HashMap<>();
@@ -36,14 +36,15 @@ public class FunctionsPlugin implements TemplatePlugin
   }
 
   /**
-   * Functional interface for registering some function for execution from a template
+   * Functional interface for registering some function for execution from a
+   * template
    */
   public interface FunctionProvider extends BiFunction<String[], VariableResolver, String>
   {
   }
 
-  /** 
-   * 
+  /**
+   *
    */
   public FunctionsPlugin()
   {
@@ -78,13 +79,9 @@ public class FunctionsPlugin implements TemplatePlugin
   public String substring(String[] args, VariableResolver ctx)
   {
     if (args.length == 2)
-    {
       return args[0].substring(Integer.parseInt(args[1]));
-    }
     else if (args.length == 3)
-    {
       return args[0].substring(Integer.parseInt(args[1]), Integer.parseInt(args[2]));
-    }
     throw new IllegalArgumentException("Substring takes 2 or 3 args");
   }
 

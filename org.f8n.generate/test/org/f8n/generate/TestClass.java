@@ -34,7 +34,7 @@ public class TestClass
     TemplateProcessor.registerPlugin(new AnnotationPlugin());
     TemplateProcessor.registerPlugin(new SubstitutionPlugin());
     TemplateProcessor.registerPlugin(new FunctionsPlugin());
-    TemplateProcessor.loadAll(new ClasspathSearch().includePackage("org.yesod.ktisis.java").classStream());
+    TemplateProcessor.loadAll(new ClasspathSearch().includePackageRecursive("org.f8n.generate").classStream());
     TemplateProcessor.loadAll(new ClassStream(AnnotationStuff.class));
     VariableResolver parent = ImmutableMap.of("parent",
                                               ImmutableMap.of("features", ImmutableMap.of("setters", Boolean.TRUE, "builder", Boolean.TRUE)))::get;
