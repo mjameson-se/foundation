@@ -9,7 +9,7 @@
 	${junit},\
 	slf4j.simple;version=1.7
 	
-Include-Resource: resources/templates
+Include-Resource: templates=resources/templates
 Export-Package: \
 	org.f8n.generate.java,\
 	org.f8n.generate,\

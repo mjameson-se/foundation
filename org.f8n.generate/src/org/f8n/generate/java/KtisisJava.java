@@ -21,7 +21,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
 /**
- * Ktisis Java generator main entry point 
+ * Ktisis Java generator main entry point
  */
 public class KtisisJava
 {
@@ -35,8 +35,8 @@ public class KtisisJava
   private Map<Object, Object> parentConfig = Collections.emptyMap();
 
   /**
-   * @throws IOException  
-   * 
+   * @throws IOException
+   *
    */
   public KtisisJava() throws IOException
   {
@@ -46,7 +46,7 @@ public class KtisisJava
     TemplateProcessor.registerPlugin(new IfDefPlugin());
     TemplateProcessor.registerPlugin(new SubstitutionPlugin());
     TemplateProcessor.registerPlugin(new FunctionsPlugin());
-    TemplateProcessor.loadAll(new ClasspathSearch().includePackage("org.yesod.ktisis.java").classStream());
+    TemplateProcessor.loadAll(new ClasspathSearch().includePackage("org.f8n.generate.java").classStream());
   }
 
   public void setParentConfig(File parentCfg) throws IOException
@@ -60,7 +60,8 @@ public class KtisisJava
   }
 
   /**
-   * Loads registrations for extentions, annotations, and functions from the given package 
+   * Loads registrations for extentions, annotations, and functions from the given package
+   * 
    * @param packageName
    * @throws IOException
    */
