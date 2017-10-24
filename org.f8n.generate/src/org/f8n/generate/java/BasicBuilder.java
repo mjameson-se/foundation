@@ -19,6 +19,7 @@ import org.f8n.generate.TemplateProcessor;
 import org.f8n.generate.VariableResolver;
 import org.f8n.generate.base.ExtensionMethod.ExtensionPoint;
 import org.f8n.generate.base.FeatureTags.Feature;
+import org.f8n.generate.base.WhitespaceHelper;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -78,7 +79,7 @@ public class BasicBuilder
     }
   }
 
-  /** 
+  /**
    * @param variableResolver
    * @return
    */
@@ -202,7 +203,7 @@ public class BasicBuilder
         builder.add(fieldAttrs.get("name").toString());
       }
     }
-    return Joiner.on(", ").join(builder);
+    return WhitespaceHelper.joinWithWrapIfNecessary(builder, ", ", 18 + variableResolver.apply("name").toString().length(), 120);
   }
 
   @ExtensionPoint("builder_fields")

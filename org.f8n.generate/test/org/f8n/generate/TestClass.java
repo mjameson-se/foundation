@@ -14,7 +14,6 @@ import org.f8n.generate.java.AnnotationPlugin;
 import org.f8n.generate.java.AnnotationPlugin.AnnotationRegistration;
 import org.f8n.reflect.ClassStream;
 import org.f8n.reflect.ClasspathSearch;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.fasterxml.jackson.jr.ob.JSON;
@@ -63,22 +62,23 @@ public class TestClass
   }
 
   @Test
-  @Ignore("Missing WhitespaceHelper.json")
   public void generateWhitespaceHelper() throws Exception
   {
     System.setProperty("file.comment", "resources/test/Test.comment");
 
     InputStream is = Files.newInputStream(Paths.get("resources/templates/ktisis/java/FileBase.template"), StandardOpenOption.READ);
-    InputStream fis = Files.newInputStream(Paths.get("resources/test/WhitespaceHelper.json"), StandardOpenOption.READ);
+    InputStream fis = Files.newInputStream(Paths.get("resources/test/WhitespaceHelperConfig.json"), StandardOpenOption.READ);
 
+    TemplateProcessor.registerPlugin(new IfDefPlugin());
     TemplateProcessor.registerPlugin(new AnnotationPlugin());
     TemplateProcessor.registerPlugin(new ExtensionRegistry());
     TemplateProcessor.registerPlugin(new SubstitutionPlugin());
     TemplateProcessor.registerPlugin(new FunctionsPlugin());
-    TemplateProcessor.loadAll(new ClasspathSearch().includePackage("org.yesod.ktisis.java").classStream());
+    TemplateProcessor.loadAll(new ClasspathSearch().includePackageRecursive("org.f8n.generate").classStream());
 
-    System.out.println(TemplateProcessor.processTemplate(is, JSON.std.mapFrom(fis)::get));
-
+    VariableResolver parent = ImmutableMap.of("parent",
+                                              ImmutableMap.of("features", ImmutableMap.of("builder", Boolean.TRUE)))::get;
+    System.out.println(TemplateProcessor.processTemplate(is, VariableResolver.merge(JSON.std.mapFrom(fis)::get, parent)));
   }
 
   @Test

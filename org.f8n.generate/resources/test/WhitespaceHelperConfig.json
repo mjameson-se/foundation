@@ -1,0 +1,13 @@
+{
+	"name" : "WhitespaceHelperConfig",
+	"package" : "org.f8n.generate.base",
+	"class_comment" : "Class comment",
+	"scope" : "public",
+	"fields" : [
+		{ "name" : "preJoin", "type" : "String", "default" : "\"\"" },
+		{ "name" : "postJoin", "type" : "String", "default" : "\"\"" },
+		{ "name" : "extraNewlinesIfWrapped", "type" : "Boolean", "default": "Boolean.FALSE" },
+		{ "name" : "lineLength", "type" : "Integer", "default": "80" },
+		{ "name" : "wrappedIndent", "type" : "Integer"  }
+	]
+}

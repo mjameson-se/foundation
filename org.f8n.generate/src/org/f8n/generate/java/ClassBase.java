@@ -100,7 +100,9 @@ public class ClassBase
     Map<?, ?> superdef = variableResolver.getAs("supertype", Map.class).orElse(null);
     String impls = variableResolver.getAs("implements", String.class).map(impl -> " implements " + impl).orElse("");
     if (superdef == null)
+    {
       return impls;
+    }
     return String.format(" extends %s%s", superdef.get("name"), impls);
   }
 
@@ -109,7 +111,9 @@ public class ClassBase
   {
     List<Map<?, ?>> superFields = getSuperFields(ctx);
     if (superFields.isEmpty())
+    {
       return null;
+    }
     String args = superFields.stream().map((f) -> (String) f.get("name")).collect(Collectors.joining(", "));
     return String.format("    super(%s);", args);
   }
@@ -260,7 +264,7 @@ public class ClassBase
         lines.add(fieldAttrs.get("name").toString());
       }
     }
-    String hashCodeBody = WhitespaceHelper.joinWithWrapIfNecessary(lines, ", ", 13, 120);
+    String hashCodeBody = WhitespaceHelper.joinWithWrapIfNecessary(lines, ", ", 28, 120);
     VariableResolver inner = (s) -> hashCodeBody;
     try (InputStream is = TemplateProcessor.getResource("templates/ktisis/java/HashCode.template", getClass()))
     {
@@ -298,5 +302,4 @@ public class ClassBase
       return TemplateProcessor.processTemplate(is, VariableResolver.merge(variableResolver, inner));
     }
   }
-
 }
