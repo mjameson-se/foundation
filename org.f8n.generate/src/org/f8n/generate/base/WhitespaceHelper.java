@@ -87,7 +87,7 @@ public class WhitespaceHelper
 
   public static String postProcess(String file)
   {
-    return Arrays.stream(file.split("\n")).map(s ->
+    return Arrays.stream(file.split("\\R")).map(s ->
     {
       return s.replaceAll("\\s+$", "");
     }).reduce((one, two) -> String.format("%s%s%s", one, lineEnding, two)).orElse("");

@@ -18,11 +18,11 @@ import org.f8n.generate.VariableResolver;
 import com.google.common.base.Preconditions;
 
 /**
- * 
+ *
  */
 public class IfDefPlugin implements TemplatePlugin
 {
-  private static final Pattern pattern = Pattern.compile("#ifdef (.+?)#endif\\n?", Pattern.DOTALL);
+  private static final Pattern pattern = Pattern.compile("#ifdef (.+?)#endif\\R?", Pattern.DOTALL);
 
   /**
    * @see org.f8n.generate.TemplatePlugin#process(java.util.regex.Matcher, org.f8n.g8n.VariableResolver)
@@ -31,7 +31,7 @@ public class IfDefPlugin implements TemplatePlugin
   public String process(Matcher match, VariableResolver context)
   {
     String body = match.group(1);
-    String[] parts = body.split("\n", 2);
+    String[] parts = body.split("\\R", 2);
     Preconditions.checkArgument(parts.length == 2, "Failed to parse ifdef: ", body);
     if (context.apply(parts[0]) != null)
     {
