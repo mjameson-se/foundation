@@ -1,23 +1,31 @@
   ${scope} ${classname} add#{upcase(${name})}(${value_type} ${name})
   {
+#! {before_collector_set}
+#! {before_add}
     this.${name}.add(${name});
     return this;
   }
 
   ${scope} ${classname} add#{upcase(${name})}(Collection<${value_type}> ${name})
   {
+#! {before_collector_set}
+#! {before_addAll}
     this.${name}.addAll(${name});
     return this;
   }
 
   ${scope} ${classname} remove#{upcase(${name})}(${value_type} ${name})
   {
+#! {before_collector_set}
+#! {before_remove}
     this.${name}.remove(${name});
     return this;
   }
 
   ${scope} ${classname} clear#{upcase(${name})}()
   {
+#! {before_collector_set}
+#! {before_clear}
     this.${name}.clear();
     return this;
   }

@@ -1,23 +1,31 @@
   ${scope} ${classname} add#{upcase(${name})}(${key_type} k, ${value_type} v)
   {
+#! {before_collector_set}
+#! {before_put}
     this.${name}.put(k, v);
     return this;
   }
 
   ${scope} ${classname} add#{upcase(${name})}(Map<${key_type}, ${value_type}> ${name})
   {
+#! {before_collector_set}
+#! {before_putAll}
     this.${name}.putAll(${name});
     return this;
   }
 
   ${scope} ${classname} remove#{upcase(${name})}(${key_type} ${name})
   {
+#! {before_collector_set}
+#! {before_removeKey}
     this.${name}.remove(${name});
     return this;
   }
 
   ${scope} ${classname} clear#{upcase(${name})}()
   {
+#! {before_collector_set}
+#! {before_clear}
     this.${name}.clear();
     return this;
   }
